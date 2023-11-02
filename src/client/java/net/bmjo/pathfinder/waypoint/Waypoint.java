@@ -1,21 +1,19 @@
 package net.bmjo.pathfinder.waypoint;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.bmjo.pathfinder.PathfinderClient;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.*;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
-import org.joml.Matrix4f;
 
-import java.awt.*;
 import java.util.UUID;
 
 public class Waypoint {
