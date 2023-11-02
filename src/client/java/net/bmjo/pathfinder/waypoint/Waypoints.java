@@ -5,7 +5,6 @@ import net.bmjo.pathfinder.networking.ClientNetworking;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.PacketByteBuf;
@@ -35,7 +34,7 @@ public class Waypoints {
     }
 
     private static void sendToOthers(int playerId, BlockPos blockPos) {
-        if (false && PathfinderClient.is_loaded) {
+        if (false) {
             PacketByteBuf buf = PacketByteBufs.create();
             buf.writeInt(playerId);
             buf.writeBlockPos(blockPos);

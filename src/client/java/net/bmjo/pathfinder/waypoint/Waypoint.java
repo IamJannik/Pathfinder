@@ -1,9 +1,6 @@
 package net.bmjo.pathfinder.waypoint;
 
 import net.bmjo.pathfinder.PathfinderClient;
-import net.fabricmc.loader.FabricLoader;
-import net.fabricmc.loader.impl.FabricLoaderImpl;
-import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
@@ -13,14 +10,11 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.shape.VoxelShape;
 
 public class Waypoint {
-    public static final Identifier BEAM_TEXTURE = new Identifier("textures/entity/beacon_beam.png");
     private final BlockPos pos;
     private final int playerID;
     private final long created;

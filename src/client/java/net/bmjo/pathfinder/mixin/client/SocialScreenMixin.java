@@ -23,8 +23,6 @@ public abstract class SocialScreenMixin extends Screen {
     @Shadow SocialInteractionsPlayerListWidget playerList;
 
     @Shadow protected abstract void setCurrentTab(SocialInteractionsScreen.Tab currentTab);
-
-    @Shadow private ButtonWidget hiddenTabButton;
     @Unique private static final Text TAB_TEAM_TITLE, SELECTED_TAB_TEAM_TITLE;
     @Unique
     private ButtonWidget teamTabButton;
