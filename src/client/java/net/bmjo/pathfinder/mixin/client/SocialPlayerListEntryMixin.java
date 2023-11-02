@@ -1,6 +1,7 @@
 package net.bmjo.pathfinder.mixin.client;
 
 import net.bmjo.pathfinder.PathfinderClient;
+import net.bmjo.pathfinder.gang.GangHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ButtonTextures;
@@ -12,7 +13,6 @@ import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,53 +29,58 @@ import java.util.function.Supplier;
 @Mixin(SocialInteractionsPlayerListEntry.class)
 public abstract class SocialPlayerListEntryMixin {
     @Unique
-    private static final ButtonTextures ADD_TEAM_TEXTURE = new ButtonTextures(new Identifier("social_interactions/mute_button"), new Identifier("social_interactions/mute_button_highlighted"));
+    private static final ButtonTextures ADD_PLAYER_TEXTURE = new ButtonTextures(PathfinderClient.identifier("add_player"), PathfinderClient.identifier("add_player_highlighted"));
     @Unique
-    private static final ButtonTextures REMOVE_TEAM_TEXTURE = new ButtonTextures(new Identifier("social_interactions/mute_button"), new Identifier("social_interactions/mute_button_highlighted"));
+    private static final ButtonTextures REMOVE_PLAYER_TEXTURE = new ButtonTextures(PathfinderClient.identifier("remove_player"), PathfinderClient.identifier("remove_player_highlighted"));
 
     @Shadow @Final private List<ClickableWidget> buttons;
     @Unique @Nullable
-    private ButtonWidget addTeamButton, removeTeamButton;
-    @Unique private static final Text addTeamText, removeTeamText;
+    private ButtonWidget addPlayerButton, removePlayerButton;
+    @Unique private static final Text addPlayerText, removePlayerText;
 
     @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/multiplayer/SocialInteractionsPlayerListEntry;setShowButtonVisible(Z)V"))
-    public void addTeamButton(MinecraftClient client, SocialInteractionsScreen parent, UUID uuid, String name, Supplier<SkinTextures> skinTexture, boolean reportable, CallbackInfo ci) {
-        this.addTeamButton = new TexturedButtonWidget(0, 0, 20, 20, ADD_TEAM_TEXTURE, (button) -> PathfinderClient.players.add(uuid),addTeamText);
-        this.addTeamButton.setTooltip(Tooltip.of(addTeamText));
-        this.addTeamButton.setTooltipDelay(10);
-        this.buttons.add(this.addTeamButton);
-        this.removeTeamButton = new TexturedButtonWidget(0, 0, 20, 20, REMOVE_TEAM_TEXTURE, (button) -> PathfinderClient.players.remove(uuid),removeTeamText);
-        this.removeTeamButton.setTooltip(Tooltip.of(removeTeamText));
-        this.removeTeamButton.setTooltipDelay(10);
-        this.buttons.add(this.removeTeamButton);
+    public void addGangButton(MinecraftClient client, SocialInteractionsScreen parent, UUID uuid, String name, Supplier<SkinTextures> skinTexture, boolean reportable, CallbackInfo ci) {
+        this.addPlayerButton = new TexturedButtonWidget(0, 0, 20, 20, ADD_PLAYER_TEXTURE, (button) -> {
+            GangHandler.addMember(uuid);
+            this.setGangVisible(true);
+        }, addPlayerText);
+        this.addPlayerButton.setTooltip(Tooltip.of(addPlayerText));
+        this.addPlayerButton.setTooltipDelay(10);
+        this.buttons.add(this.addPlayerButton);
+        this.removePlayerButton = new TexturedButtonWidget(0, 0, 20, 20, REMOVE_PLAYER_TEXTURE, (button) -> {
+            GangHandler.removeMember(uuid);
+            this.setGangVisible(false);
+        }, removePlayerText);
+        this.removePlayerButton.setTooltip(Tooltip.of(removePlayerText));
+        this.removePlayerButton.setTooltipDelay(10);
+        this.buttons.add(this.removePlayerButton);
 
-
-        this.setTeamVisible(PathfinderClient.players.contains(uuid));
+        this.setGangVisible(GangHandler.members.contains(uuid));
     }
 
     @Inject(method = "render", at = @At(value = "TAIL"))
-    public void renderTeamButton(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta, CallbackInfo ci) {
-        if (this.addTeamButton != null && this.removeTeamButton != null) {
-            this.addTeamButton.setX(x + (entryWidth - this.addTeamButton.getWidth() - 8) - 40 - 4);
-            this.addTeamButton.setY(y + (entryHeight - this.addTeamButton.getHeight()) / 2);
-            this.addTeamButton.render(context, mouseX, mouseY, tickDelta);
-            this.removeTeamButton.setX(x + (entryWidth - this.removeTeamButton.getWidth() - 8) - 40 - 4);
-            this.removeTeamButton.setY(y + (entryHeight - this.removeTeamButton.getHeight()) / 2);
-            this.removeTeamButton.render(context, mouseX, mouseY, tickDelta);
+    public void renderGangButton(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta, CallbackInfo ci) {
+        if (this.addPlayerButton != null && this.removePlayerButton != null) {
+            this.addPlayerButton.setX(x + (entryWidth - this.addPlayerButton.getWidth() - 8) - 40 - 4);
+            this.addPlayerButton.setY(y + (entryHeight - this.addPlayerButton.getHeight()) / 2);
+            this.addPlayerButton.render(context, mouseX, mouseY, tickDelta);
+            this.removePlayerButton.setX(x + (entryWidth - this.removePlayerButton.getWidth() - 8) - 40 - 4);
+            this.removePlayerButton.setY(y + (entryHeight - this.removePlayerButton.getHeight()) / 2);
+            this.removePlayerButton.render(context, mouseX, mouseY, tickDelta);
         }
     }
 
     @Unique
-    private void setTeamVisible(boolean isInTeam) {
-        if (this.addTeamButton != null)
-            this.addTeamButton.visible = !isInTeam;
-        if (this.removeTeamButton != null)
-            this.removeTeamButton.visible = isInTeam;
-        this.buttons.set(3, isInTeam ? this.removeTeamButton : this.addTeamButton);
+    private void setGangVisible(boolean isInGang) {
+        if (this.addPlayerButton != null)
+            this.addPlayerButton.visible = !isInGang;
+        if (this.removePlayerButton != null)
+            this.removePlayerButton.visible = isInGang;
+        this.buttons.set(3, isInGang ? this.removePlayerButton : this.addPlayerButton);
     }
 
     static {
-        addTeamText = Text.translatable("pathfinder.team.add");
-        removeTeamText = Text.translatable("pathfinder.team.remove");
+        addPlayerText = Text.translatable("pathfinder.gang.add");
+        removePlayerText = Text.translatable("pathfinder.gang.remove");
     }
 }

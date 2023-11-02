@@ -2,7 +2,7 @@ package net.bmjo.pathfinder.event;
 
 import net.bmjo.pathfinder.PathfinderClient;
 import net.bmjo.pathfinder.networking.ClientNetworking;
-import net.bmjo.pathfinder.waypoint.Waypoints;
+import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -14,8 +14,8 @@ public class ClientEvents {
         ServerPlayConnectionEvents.DISCONNECT.register((client, sender) -> PathfinderClient.is_loaded = false);
         ClientTickEvents.END_CLIENT_TICK.register((client) -> {
             if (System.currentTimeMillis() % 10000 == 0)
-                Waypoints.update();
+                WaypointHandler.update();
         });
-        WorldRenderEvents.END.register(Waypoints::render);
+        WorldRenderEvents.END.register(WaypointHandler::render);
     }
 }

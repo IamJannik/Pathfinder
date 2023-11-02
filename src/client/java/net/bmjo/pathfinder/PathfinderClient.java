@@ -9,15 +9,11 @@ import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.UUID;
-
 public class PathfinderClient implements ClientModInitializer {
 	public static final String MOD_ID = "pathfinder";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	public static final HashSet<UUID> players = new HashSet<>();
 	public static boolean is_loaded = false;
-	public static boolean use_team = false;
+	public static boolean use_gang = true;
 
 	@Override
 	public void onInitializeClient() {

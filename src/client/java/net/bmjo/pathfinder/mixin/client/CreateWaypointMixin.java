@@ -1,8 +1,10 @@
 package net.bmjo.pathfinder.mixin.client;
 
-import net.bmjo.pathfinder.waypoint.Waypoints;
+import net.bmjo.pathfinder.PathfinderClient;
+import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.sound.SoundEvents;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,8 +19,10 @@ public abstract class CreateWaypointMixin {
 	@Inject(at = @At("HEAD"), method = "handleInputEvents", cancellable = true)
 	private void run(CallbackInfo info) {
 		while(this.options.useKey.wasPressed()) { //TODO
-			if (Waypoints.createWaypoint())
+			if (WaypointHandler.createWaypoint()) {
+				PathfinderClient.getPlayer().playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 1.0F);
 				info.cancel();
+			}
 		}
 	}
 }
