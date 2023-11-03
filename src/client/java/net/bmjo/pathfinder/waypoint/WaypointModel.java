@@ -9,6 +9,7 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.List;
 
+@Deprecated
 public record WaypointModel(float[] vertices, float[] uvs) {
     public void render(MatrixStack matrixStack, VertexConsumer vertexConsumer, int color) {
         Matrix4f modelMatrix = matrixStack.peek().getPositionMatrix();

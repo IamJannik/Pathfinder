@@ -13,9 +13,9 @@ public class ClientEvents {
         ServerPlayConnectionEvents.JOIN.register((client, sender, server) -> sender.sendPacket(ClientNetworking.IS_LOADED, PacketByteBufs.create()));
         ServerPlayConnectionEvents.DISCONNECT.register((client, sender) -> PathfinderClient.is_loaded = false);
         ClientTickEvents.END_CLIENT_TICK.register((client) -> {
-            if (System.currentTimeMillis() % 10000 == 0)
+            if (System.currentTimeMillis() % 10 * 1000 == 0)
                 WaypointHandler.update();
         });
-        WorldRenderEvents.END.register(WaypointHandler::render);
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(WaypointHandler::render);
     }
 }

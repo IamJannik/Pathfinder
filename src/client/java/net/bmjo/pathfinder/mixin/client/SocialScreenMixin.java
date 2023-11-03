@@ -2,6 +2,7 @@ package net.bmjo.pathfinder.mixin.client;
 
 import net.bmjo.pathfinder.PathfinderClient;
 import net.bmjo.pathfinder.gang.GangHandler;
+import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.minecraft.client.gui.screen.ButtonTextures;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.SocialInteractionsPlayerListWidget;
@@ -43,10 +44,16 @@ public abstract class SocialScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At(value = "TAIL"))
     public void addConfigButton(CallbackInfo ci) {
-        this.useGangButton = this.addDrawableChild(new TexturedButtonWidget(this.width - 24, this.height - 22, 20, 20, USE_GANG_TEXTURE, (button) -> this.setGangVisible(false), useGangText));
+        this.useGangButton = this.addDrawableChild(new TexturedButtonWidget(this.width - 24, this.height - 22, 20, 20, USE_GANG_TEXTURE, (button) -> {
+            this.setGangVisible(false);
+            WaypointHandler.onlyTeam();
+        }, useGangText));
         this.useGangButton.setTooltip(Tooltip.of(useTeamText));
         this.useGangButton.setTooltipDelay(10);
-        this.useTeamButton = this.addDrawableChild(new TexturedButtonWidget(this.width - 24, this.height - 22, 20, 20, USE_TEAM_TEXTURE, (button) -> this.setGangVisible(true), useTeamText));
+        this.useTeamButton = this.addDrawableChild(new TexturedButtonWidget(this.width - 24, this.height - 22, 20, 20, USE_TEAM_TEXTURE, (button) -> {
+            this.setGangVisible(true);
+            WaypointHandler.onlyGang();
+        }, useTeamText));
         this.useTeamButton.setTooltip(Tooltip.of(useGangText));
         this.useTeamButton.setTooltipDelay(10);
 
@@ -72,7 +79,7 @@ public abstract class SocialScreenMixin extends Screen {
         if (currentTab == null) {
             this.selected ^= this.selected;
             this.gangTabButton.setMessage(selectedGangTabTitle);
-            Collection<UUID> collection = GangHandler.members;
+            Collection<UUID> collection = GangHandler.members();
             this.playerList.update(collection, this.playerList.getScrollAmount(), false);
             ci.cancel();
         }

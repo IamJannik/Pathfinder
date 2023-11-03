@@ -31,7 +31,7 @@ public abstract class SocialPlayerListEntryMixin {
     @Unique
     private static final ButtonTextures SINGLE_PERSON_TEXTURE = new ButtonTextures(PathfinderClient.identifier("single_person"), PathfinderClient.identifier("single_person_highlighted"));
     @Unique
-    private static final ButtonTextures GANG_MEMBER_TEXTURE = new ButtonTextures(PathfinderClient.identifier("gang_member_player"), PathfinderClient.identifier("gang_member_highlighted"));
+    private static final ButtonTextures GANG_MEMBER_TEXTURE = new ButtonTextures(PathfinderClient.identifier("gang_member"), PathfinderClient.identifier("gang_member_highlighted"));
 
     @Shadow @Final private List<ClickableWidget> buttons;
     @Unique @Nullable
@@ -44,18 +44,18 @@ public abstract class SocialPlayerListEntryMixin {
             GangHandler.addMember(uuid);
             this.setGangVisible(true);
         }, addPlayerText);
-        this.addPlayerButton.setTooltip(Tooltip.of(removePlayerText));
+        this.addPlayerButton.setTooltip(Tooltip.of(addPlayerText));
         this.addPlayerButton.setTooltipDelay(10);
         this.buttons.add(this.addPlayerButton);
         this.removePlayerButton = new TexturedButtonWidget(0, 0, 20, 20, GANG_MEMBER_TEXTURE, (button) -> {
             GangHandler.removeMember(uuid);
             this.setGangVisible(false);
         }, removePlayerText);
-        this.removePlayerButton.setTooltip(Tooltip.of(addPlayerText));
+        this.removePlayerButton.setTooltip(Tooltip.of(removePlayerText));
         this.removePlayerButton.setTooltipDelay(10);
         this.buttons.add(this.removePlayerButton);
 
-        this.setGangVisible(GangHandler.members.contains(uuid));
+        this.setGangVisible(GangHandler.isMember(uuid));
     }
 
     @Inject(method = "render", at = @At(value = "TAIL"))

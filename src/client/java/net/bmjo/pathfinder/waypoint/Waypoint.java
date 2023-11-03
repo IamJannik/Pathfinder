@@ -1,18 +1,18 @@
 package net.bmjo.pathfinder.waypoint;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.bmjo.pathfinder.PathfinderClient;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
+import org.lwjgl.opengl.GL11;
 
 import java.util.UUID;
 
@@ -22,7 +22,6 @@ public class Waypoint {
     private final long created;
     private final int color;
     private final boolean farAway;
-    private final WaypointModel model;
 
     private Waypoint(BlockPos pos, UUID player, long created, int color) {
         this.pos = pos;
@@ -30,7 +29,6 @@ public class Waypoint {
         this.created = created;
         this.color = color;
         this.farAway = !isClientInRange(this.pos, 10);
-        this.model = WaypointModel.create(380, 0.25F);
     }
 
     public static Waypoint create(BlockPos pos, UUID player) {
@@ -53,32 +51,74 @@ public class Waypoint {
         return PathfinderClient.getPlayer().getBlockPos().isWithinDistance(pos, distance);
     }
 
-    public void render(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, Camera camera) {
-        if (vertexConsumerProvider == null)
-            return;
-        long time = System.currentTimeMillis() - this.created;
+    public void render(Camera camera) {
+        renderBeam(this.pos, this.color, System.currentTimeMillis() - this.created, camera);
+        renderBlockOutline(this.pos, this.color, camera);
+    }
+
+    private static void renderBeam(BlockPos blockPos, int color, long time, Camera camera) {
+        Vec3d transformedPosition = new Vec3d(blockPos.getX(), blockPos.getY(), blockPos.getZ()).subtract(camera.getPos());
+
+        MatrixStack matrixStack = new MatrixStack();
+        matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+        matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
+        matrixStack.translate(transformedPosition.x + 0.5F, transformedPosition.y, transformedPosition.z + 0.5F);
         //matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * 2.25F - 45.0F));
-        this.renderBeam(matrixStack, vertexConsumerProvider.getBuffer(RenderLayer.getLines()), camera);
-        this.renderBlockOutline(matrixStack, vertexConsumerProvider.getBuffer(RenderLayer.getLines()), camera);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+        MatrixStack.Entry entry = matrixStack.peek();
+        buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
+        buffer
+                .vertex(entry.getPositionMatrix(), 0.0F, 100.0F, 0.0F)
+                .color(color)
+                .normal(entry.getNormalMatrix(), 0.0F, 200.0F, 0.0F).next();
+        buffer
+                .vertex(entry.getPositionMatrix(), 0.0F, -100.0F, 0.0F)
+                .color(color)
+                .normal(entry.getNormalMatrix(), 0.0F, 200.0F, 0.0F).next();
+
+
+        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
+        RenderSystem.disableCull();
+        RenderSystem.lineWidth(5.0F);
+        tessellator.draw();
+        RenderSystem.enableCull();
+        RenderSystem.lineWidth(1.0F);
     }
 
-    private void renderBeam(MatrixStack matrixStack, VertexConsumer vertexConsumer, Camera camera) {
+    private static void renderBlockOutline(BlockPos blockPos, int color, Camera camera) {
+        Vec3d transformedPosition = new Vec3d(blockPos.getX(), blockPos.getY(), blockPos.getZ()).subtract(camera.getPos());
 
-    }
+        MatrixStack matrixStack = new MatrixStack();
+        matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+        matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
+        matrixStack.translate(transformedPosition.x, transformedPosition.y, transformedPosition.z);
 
-    private void renderBlockOutline(MatrixStack matrixStack, VertexConsumer vertexConsumer, Camera camera) {
-        Vec3d transformedPosition = new Vec3d(this.pos.getX(), this.pos.getY(), this.pos.getZ()).subtract(camera.getPos());
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+
+        buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
         ClientWorld world = MinecraftClient.getInstance().world;
         assert world != null;
-        BlockState blockState = world.getBlockState(this.pos);
-        VoxelShape shape =  blockState.getOutlineShape(world, this.pos, ShapeContext.of(camera.getFocusedEntity()));
-        renderShapeOutline(matrixStack, vertexConsumer, shape, transformedPosition.getX(), transformedPosition.getY(), transformedPosition.getZ(), this.color);
+        BlockState blockState = world.getBlockState(blockPos);
+        VoxelShape shape = blockState.getOutlineShape(world, blockPos, ShapeContext.of(camera.getFocusedEntity()));
+        if (!blockState.isAir() && world.getWorldBorder().contains(blockPos))
+            renderShapeOutline(matrixStack, buffer, shape, color);
+
+
+        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
+        setupRenderSystem();
+        tessellator.draw();
+        resetRenderSystem();
     }
 
-    private static void renderShapeOutline(MatrixStack matrixStack, VertexConsumer vertexConsumer, VoxelShape shape, double xOffset, double yOffset, double zOffset, int color) {
-        matrixStack.push();
+    private static void renderShapeOutline(MatrixStack matrixStack, VertexConsumer vertexConsumer, VoxelShape shape, int color) {
         MatrixStack.Entry entry = matrixStack.peek();
-        matrixStack.translate(xOffset, yOffset, zOffset);
         shape.forEachEdge((minX, minY, minZ, maxX, maxY, maxZ) -> {
             Vec3d normVec = new Vec3d(maxX - minX, maxY - minY, maxZ - minZ).normalize();
             vertexConsumer
@@ -90,6 +130,17 @@ public class Waypoint {
                     .color(color)
                     .normal(entry.getNormalMatrix(), (float)normVec.x, (float)normVec.y, (float)normVec.z).next();
         });
-        matrixStack.pop();
+    }
+
+    private static void setupRenderSystem() {
+        RenderSystem.disableCull();
+        RenderSystem.depthFunc(GL11.GL_ALWAYS);
+        RenderSystem.lineWidth(5.0F);
+    }
+
+    private static void resetRenderSystem() {
+        RenderSystem.enableCull();
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        RenderSystem.lineWidth(1.0F);
     }
 }

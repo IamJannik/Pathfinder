@@ -1,7 +1,6 @@
 package net.bmjo.pathfinder.mixin.client;
 
 import com.mojang.authlib.GameProfile;
-import net.bmjo.pathfinder.gang.GangHandler;
 import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.minecraft.client.network.message.MessageHandler;
 import net.minecraft.network.message.MessageType;
@@ -17,10 +16,8 @@ import java.util.regex.Pattern;
 
 @Mixin(MessageHandler.class)
 public class ChatMixin {
-    @Inject(method = "onChatMessage", at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"))
+    @Inject(method = "onChatMessage", at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"), cancellable = true)
     public void isPFMessage(SignedMessage message, GameProfile sender, MessageType.Parameters params, CallbackInfo ci) {
-        if (!GangHandler.isMember(sender.getId()))
-            return;
         String msg = message.getContent().getString();
         if (msg.contains("Lets meet here: X:")) {
             int[] cords = new int[3];
@@ -30,13 +27,12 @@ public class ChatMixin {
             for (; cord < 3 && matcher.find(); cord++)
                 cords[cord] = Integer.parseInt(matcher.group());
             if (cord == 3)
-                WaypointHandler.addWaypoint(sender.getId(), new BlockPos(cords[0], cords[1], cords[2]));
+                WaypointHandler.tryAddWaypoint(sender.getId(), new BlockPos(cords[0], cords[1], cords[2]));
         } else if (msg.equals("Forget about my meeting point.")) {
-            WaypointHandler.removeWaypoint(sender.getId());
-        } else if (msg.equals("I added you to my gang.")) { //TODO doch weg
-            GangHandler.addMember(sender.getId());
-        } else if (msg.equals("I kicked you out of my gang.")) {
-            GangHandler.removeMember(sender.getId());
+            WaypointHandler.tryRemoveWaypoint(sender.getId());
+        } else {
+            return;
         }
+        ci.cancel();
     }
 }
