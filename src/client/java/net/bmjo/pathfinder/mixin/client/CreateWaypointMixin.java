@@ -18,9 +18,9 @@ public abstract class CreateWaypointMixin {
 
 	@Inject(at = @At("HEAD"), method = "handleInputEvents", cancellable = true)
 	private void run(CallbackInfo info) {
-		while(this.options.useKey.wasPressed()) { //TODO
+		while (this.options.pickItemKey.wasPressed()) { //TODO
 			if (WaypointHandler.createWaypoint()) {
-				PathfinderClient.getPlayer().playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 1.0F);
+				PathfinderClient.getPlayer().playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_PLACE, 1.0F, 1.0F);
 				info.cancel();
 			}
 		}
