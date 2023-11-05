@@ -5,19 +5,22 @@ import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.minecraft.client.network.message.MessageHandler;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.time.Instant;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Mixin(MessageHandler.class)
 public class ChatMixin {
-    @Inject(method = "onChatMessage", at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"), cancellable = true)
-    public void isPFMessage(SignedMessage message, GameProfile sender, MessageType.Parameters params, CallbackInfo ci) {
+    //@Inject(method = "onChatMessage", at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"), cancellable = true)
+    @Inject(method = "processChatMessageInternal", at = @At(value = "HEAD"), cancellable = true)
+    public void isPFMessage(MessageType.Parameters params, SignedMessage message, Text decorated, GameProfile sender, boolean onlyShowSecureChat, Instant receptionTimestamp, CallbackInfoReturnable<Boolean> cir) {
         String msg = message.getContent().getString();
         if (msg.contains("Lets meet here: X:")) {
             int[] cords = new int[3];
@@ -33,6 +36,6 @@ public class ChatMixin {
         } else {
             return;
         }
-        ci.cancel();
+        cir.setReturnValue(true);
     }
 }

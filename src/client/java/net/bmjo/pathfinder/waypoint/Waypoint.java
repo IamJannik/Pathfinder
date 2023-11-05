@@ -5,6 +5,7 @@ import net.bmjo.pathfinder.PathfinderClient;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -39,16 +40,13 @@ public class Waypoint {
         return this.pos;
     }
 
-    public UUID player() {
-        return this.player;
-    }
-
     public boolean tryRemove() {
         return System.currentTimeMillis() - this.created >= 10 * 60 * 1000 || (this.farAway && isClientInRange(this.pos, 3)); // 10 min
     }
 
     private static boolean isClientInRange(BlockPos pos, int distance) {
-        return PathfinderClient.getPlayer().getBlockPos().isWithinDistance(pos, distance);
+        ClientPlayerEntity player = PathfinderClient.getPlayer();
+        return player != null && player.getBlockPos().isWithinDistance(pos, distance);
     }
 
     public void render(Camera camera) {
@@ -63,7 +61,7 @@ public class Waypoint {
         matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
         matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(camera.getYaw() + 180.0F));
         matrixStack.translate(transformedPosition.x + 0.5F, transformedPosition.y, transformedPosition.z + 0.5F);
-        //matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * 2.25F - 45.0F));
+        matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(time * 2.25F - 45.0F));
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();

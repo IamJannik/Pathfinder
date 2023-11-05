@@ -6,6 +6,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ public class PathfinderClient implements ClientModInitializer {
 		return new Identifier(MOD_ID, name);
 	}
 
+	@Nullable
 	public static ClientPlayerEntity getPlayer() {
 		return MinecraftClient.getInstance().player;
 	}

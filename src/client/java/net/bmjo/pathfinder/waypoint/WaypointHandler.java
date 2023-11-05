@@ -3,6 +3,7 @@ package net.bmjo.pathfinder.waypoint;
 import net.bmjo.pathfinder.PathfinderClient;
 import net.bmjo.pathfinder.gang.GangHandler;
 import net.bmjo.pathfinder.networking.ClientNetworking;
+import net.bmjo.pathfinder.uil.PathfinderClientUtil;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -11,16 +12,13 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class WaypointHandler {
     private static final Map<UUID, Waypoint> WAYPOINTS = new HashMap<>();
@@ -33,33 +31,37 @@ public class WaypointHandler {
 
     public static void tryAddWaypoint(UUID owner, BlockPos blockPos) {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
-        if (clientPlayer.getUuid().equals(owner))
+        if (clientPlayer != null && clientPlayer.getUuid().equals(owner))
             return;
         if (PathfinderClient.use_gang) {
             if (GangHandler.isMember(owner))
                 addWaypoint(owner, blockPos);
         } else {
-            if (isInTeam(owner))
+            if (PathfinderClientUtil.isInTeam(owner))
                 addWaypoint(owner, blockPos);
         }
     }
 
     public static boolean createWaypoint() {
-        UUID player = PathfinderClient.getPlayer().getUuid();
+        ClientPlayerEntity player = PathfinderClient.getPlayer();
         HitResult hitResult = raycastWaypoint();
-        if (!(hitResult instanceof BlockHitResult blockHitResult))
+        if (player == null || !(hitResult instanceof BlockHitResult blockHitResult))
             return false;
+        UUID uuid = player.getUuid();
         BlockPos hitPos = blockHitResult.getBlockPos();
-        if (WAYPOINTS.containsKey(player) && WAYPOINTS.get(player).pos().isWithinDistance(hitPos, 3)) // TODO or not when near
+        if (WAYPOINTS.containsKey(uuid) && WAYPOINTS.get(uuid).pos().isWithinDistance(hitPos, 3)) // TODO or not when near
             deleteWaypoint();
         else {
-            addWaypoint(player, hitPos);
+            addWaypoint(uuid, hitPos);
             sendCreate(hitPos);
         }
         return true;
     }
 
     private static void sendCreate(BlockPos blockPos) {
+        ClientPlayerEntity player = PathfinderClient.getPlayer();
+        if (player == null)
+            return;
         if (PathfinderClient.use_gang) {
             if (PathfinderClient.is_loaded) {
                 GangHandler.forEach(uuid -> {
@@ -70,33 +72,29 @@ public class WaypointHandler {
                 });
             } else {
                 GangHandler.forEach((uuid -> {
-                    PlayerListEntry playerEntry = PathfinderClient.getPlayer().networkHandler.getPlayerListEntry(uuid);
-                    if (playerEntry != null)
-                        sendAddMessage(playerEntry.getProfile().getName(), blockPos);
+                    PlayerListEntry member = player.networkHandler.getPlayerListEntry(uuid);
+                    if (member != null)
+                        player.networkHandler.sendChatCommand(String.format("msg %s Lets meet here: X:%d Y:%d Z:%d", member.getProfile().getName(), blockPos.getX(), blockPos.getY(), blockPos.getZ()));
                 }));
             }
         } else {
-            ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
-            if (clientPlayer.getScoreboardTeam() != null) {
+            if (player.getScoreboardTeam() != null) {
                 if (PathfinderClient.is_loaded) {
                     ClientPlayNetworking.send(ClientNetworking.CREATE_TEAM_WAYPOINT, PacketByteBufs.create().writeBlockPos(blockPos));
                 } else {
                     PathfinderClient.getPlayer().networkHandler.sendChatCommand(String.format("teammsg Lets meet here: X:%d Y:%d Z:%d", blockPos.getX(), blockPos.getY(), blockPos.getZ()));
                 }
             } else {
-                clientPlayer.sendMessage(Text.literal(String.format("Not in any Team. Join Team or change in <%s> to share Waypoint.", MinecraftClient.getInstance().options.socialInteractionsKey.getBoundKeyLocalizedText().getString())).formatted(Formatting.RED), true);
+                player.sendMessage(Text.literal(String.format("Not in any Team. Join Team or change in <%s> to share Waypoint.", MinecraftClient.getInstance().options.socialInteractionsKey.getBoundKeyLocalizedText().getString())).formatted(Formatting.RED), true);
             }
         }
-    }
-
-    private static void sendAddMessage(String player, BlockPos blockPos) {
-        PathfinderClient.getPlayer().networkHandler.sendChatCommand(String.format("msg %s Lets meet here: X:%d Y:%d Z:%d", player, blockPos.getX(), blockPos.getY(), blockPos.getZ()));
     }
 
     // DELETE
 
     public static void tryRemoveWaypoint(UUID owner) {
-        if (owner != PathfinderClient.getPlayer().getUuid())
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer != null && owner != clientPlayer.getUuid())
             removeWaypoint(owner);
     }
 
@@ -105,58 +103,59 @@ public class WaypointHandler {
     }
 
     public static void deleteWaypoint() {
-        UUID player = PathfinderClient.getPlayer().getUuid();
-        removeWaypoint(player);
-        sendDelete();
+        ClientPlayerEntity player = PathfinderClient.getPlayer();
+        if (player != null) {
+            UUID uuid = player.getUuid();
+            removeWaypoint(uuid);
+            sendDelete();
+        }
     }
 
     private static void sendDelete() {
+        ClientPlayerEntity player = PathfinderClient.getPlayer();
+        if (player == null)
+            return;
         if (PathfinderClient.use_gang) {
             if (PathfinderClient.is_loaded) {
                 GangHandler.forEach(uuid -> ClientPlayNetworking.send(ClientNetworking.REMOVE_GANG_WAYPOINT, PacketByteBufs.create().writeUuid(uuid)));
             } else {
                 GangHandler.forEach((uuid -> {
-                    PlayerListEntry playerEntry = PathfinderClient.getPlayer().networkHandler.getPlayerListEntry(uuid);
-                    if (playerEntry != null)
-                        sendDeleteMessage(playerEntry.getProfile().getName());
+                    PlayerListEntry member = player.networkHandler.getPlayerListEntry(uuid);
+                    if (member != null)
+                        player.networkHandler.sendChatCommand(String.format("msg %s Forget about my meeting point.", member.getProfile().getName()));
                 }));
             }
         } else {
-            ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
-            if (clientPlayer.getScoreboardTeam() != null) {
+            if (player.getScoreboardTeam() != null) {
                 if (PathfinderClient.is_loaded) {
                     ClientPlayNetworking.send(ClientNetworking.REMOVE_TEAM_WAYPOINT, PacketByteBufs.create());
                 } else {
-                    clientPlayer.networkHandler.sendChatCommand("teammsg Forget about my meeting point.");
+                    player.networkHandler.sendChatCommand("teammsg Forget about my meeting point.");
                 }
             } else {
-                clientPlayer.sendMessage(Text.literal(String.format("Not in any Team. Join Team or change in <%s> to share Waypoint.", MinecraftClient.getInstance().options.socialInteractionsKey.getBoundKeyLocalizedText().getString())).formatted(Formatting.RED), true);
+                player.sendMessage(Text.literal(String.format("Not in any Team. Join Team or change in <%s> to share Waypoint.", MinecraftClient.getInstance().options.socialInteractionsKey.getBoundKeyLocalizedText().getString())).formatted(Formatting.RED), true);
             }
         }
-    }
-
-    private static void sendDeleteMessage(String member) {
-        PathfinderClient.getPlayer().networkHandler.sendChatCommand(String.format("msg %s Forget about my meeting point.", member));
     }
 
     // STUFF
 
     public static void onlyGang() {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer == null)
+            return;
         for (UUID uuid : WAYPOINTS.keySet())
-            if (!(GangHandler.isMember(uuid) || PathfinderClient.getPlayer().getUuid().equals(uuid)))
+            if (!(GangHandler.isMember(uuid) || clientPlayer.getUuid().equals(uuid)))
                 removeWaypoint(uuid);
     }
 
     public static void onlyTeam() {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer == null)
+            return;
         for (UUID uuid : WAYPOINTS.keySet())
-            if (!(isInTeam(uuid) || PathfinderClient.getPlayer().getUuid().equals(uuid)))
+            if (!(PathfinderClientUtil.isInTeam(uuid) || clientPlayer.getUuid().equals(uuid)))
                 removeWaypoint(uuid);
-    }
-
-    private static boolean isInTeam(UUID uuid) {
-        AbstractTeam team = PathfinderClient.getPlayer().getScoreboardTeam();
-        PlayerListEntry playerEntry = PathfinderClient.getPlayer().networkHandler.getPlayerListEntry(uuid);
-        return team != null && playerEntry != null && team.getPlayerList().contains(playerEntry.getProfile().getName());
     }
 
     private static HitResult raycastWaypoint() {
@@ -166,9 +165,12 @@ public class WaypointHandler {
     }
 
     public static void update() {
-        for (Waypoint waypoint : WAYPOINTS.values())
-            if (waypoint.tryRemove())
-                removeWaypoint(waypoint.player());
+        Set<UUID> remove = new HashSet<>(WAYPOINTS.size());
+        for (Map.Entry<UUID, Waypoint> waypoint : WAYPOINTS.entrySet())
+            if (waypoint.getValue().tryRemove())
+                remove.add(waypoint.getKey());
+        for (UUID uuid : remove)
+            removeWaypoint(uuid);
     }
 
     public static void render(WorldRenderContext ctx) {
