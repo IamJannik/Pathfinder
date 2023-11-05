@@ -19,21 +19,19 @@ import java.util.UUID;
 
 public class Waypoint {
     private final BlockPos pos;
-    private final UUID player;
     private final long created;
     private final int color;
     private final boolean farAway;
 
-    private Waypoint(BlockPos pos, UUID player, long created, int color) {
+    private Waypoint(BlockPos pos, long created, int color) {
         this.pos = pos;
-        this.player = player;
         this.created = created;
         this.color = color;
         this.farAway = !isClientInRange(this.pos, 10);
     }
 
-    public static Waypoint create(BlockPos pos, UUID player) {
-        return new Waypoint(pos, player, System.currentTimeMillis(), Math.abs(player.hashCode()) % 0xFFFFFF + 0xFF000000);
+    public static Waypoint create(BlockPos pos, UUID owner) {
+        return new Waypoint(pos, System.currentTimeMillis(), Math.abs(owner.hashCode()) % 0xFFFFFF + 0xFF000000);
     }
 
     public BlockPos pos() {
