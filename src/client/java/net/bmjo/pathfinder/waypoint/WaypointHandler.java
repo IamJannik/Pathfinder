@@ -41,11 +41,11 @@ public class WaypointHandler {
         }
     }
 
-    public static boolean createWaypoint() {
+    public static void createWaypoint() {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
         HitResult hitResult = raycastWaypoint();
         if (player == null || !(hitResult instanceof BlockHitResult blockHitResult))
-            return false;
+            return;
         UUID uuid = player.getUuid();
         BlockPos hitPos = blockHitResult.getBlockPos();
         if (WAYPOINTS.containsKey(uuid) && WAYPOINTS.get(uuid).pos().isWithinDistance(hitPos, 3)) // TODO or not when near
@@ -54,7 +54,6 @@ public class WaypointHandler {
             addWaypoint(uuid, hitPos);
             sendCreate(hitPos);
         }
-        return true;
     }
 
     private static void sendCreate(BlockPos blockPos) {

@@ -4,12 +4,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.resource.ResourceManager;
-import xaero.common.graphics.shader.FramebufferLinesShader;
 
 import java.io.IOException;
 
 public class PathfinderShaders {
-    public static FramebufferLinesShader FRAMEBUFFER_LINES = null;
     public static ShaderProgram POSITION_COLOR = null;
     private static boolean firstTime = true;
 
@@ -19,7 +17,6 @@ public class PathfinderShaders {
     public static void onResourceReload(ResourceManager resourceManager) {
 
         try {
-            FRAMEBUFFER_LINES = reloadShader(FRAMEBUFFER_LINES, new FramebufferLinesShader(resourceManager));
             POSITION_COLOR = reloadShader(POSITION_COLOR, new ShaderProgram(resourceManager, "pathfinder/position_color", VertexFormats.POSITION_COLOR_TEXTURE));
         } catch (IOException var3) {
             if (firstTime) {
@@ -39,7 +36,7 @@ public class PathfinderShaders {
     }
 
     public static void ensureShaders() {
-        if (FRAMEBUFFER_LINES == null && firstTime) {
+        if (firstTime) {
             onResourceReload(MinecraftClient.getInstance().getResourceManager());
         }
 

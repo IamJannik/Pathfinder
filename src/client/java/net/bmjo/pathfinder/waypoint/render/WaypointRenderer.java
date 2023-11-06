@@ -15,7 +15,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
@@ -158,7 +157,7 @@ public final class WaypointRenderer {
         double distance = Math.sqrt(offX * offX + offY * offY + offZ * offZ);
 
         if (distance2D >= 0.0D) {
-            Text name = waypoint.name();
+            String name = waypoint.name();
             String distanceText = "";
             if (correctDistance > 10.0D) {
                 boolean couldShowDistance = couldShowDistance(cameraAngleYaw, offZ, offX);
@@ -171,7 +170,7 @@ public final class WaypointRenderer {
                         distanceText = new DecimalFormat("0.0").format(correctDistance) + "m";
                     }
                 } else {
-                    name = Text.empty();
+                    name = "";
                 }
             }
 
@@ -222,7 +221,7 @@ public final class WaypointRenderer {
         return Math.abs(offset) < 10;
     }
 
-    private void drawAsOverlay(Waypoint waypoint, Text name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, double depthClamp, double depth) {
+    private void drawAsOverlay(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, double depthClamp, double depth) {
         MatrixStack matrixStack = this.matrixStack.getMatrices();
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
 
@@ -239,7 +238,7 @@ public final class WaypointRenderer {
         this.drawIconInWorld(waypoint, name, distance, vertexConsumerProvider);
     }
 
-    private void drawIconInWorld(Waypoint waypoint, Text name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider) {
+    private void drawIconInWorld(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
 
         int iconScale = 2;
@@ -257,12 +256,12 @@ public final class WaypointRenderer {
 
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(770, 771, 1, 0);
-        boolean showName = !name.equals(Text.empty());
+        boolean showName = !name.isEmpty();
         matrixStackOverlay.scale((float) (1.0 / iconScale), (float) (1.0 / iconScale), 1.0F);
         matrixStackOverlay.translate((float) (-halfIconPixel), 0.0F, 0.0F);
         matrixStackOverlay.translate(0.0F, 2.0F, 0.0F);
         if (showName) {
-            this.renderWaypointLabel(name.getString(), nameScale, vertexConsumerProvider);
+            this.renderWaypointLabel(name, nameScale, vertexConsumerProvider);
         }
 
         matrixStackOverlay.translate(0.0F, 2.0F, 0.0F);
@@ -302,8 +301,6 @@ public final class WaypointRenderer {
     }
 
     public static void drawNormalText(MatrixStack matrices, String name, float x, float y, int color, boolean shadow, VertexConsumerProvider.Immediate vertexConsumerProvider) {
-        float backgroundOpacity = MinecraftClient.getInstance().options.getTextBackgroundOpacity(0.25F);
-        int backgroundColor = (int) (backgroundOpacity * 255.0F) << 24;
-        MinecraftClient.getInstance().textRenderer.draw(name, x, y, color, shadow, matrices.peek().getPositionMatrix(), vertexConsumerProvider, TextRenderer.TextLayerType.NORMAL, backgroundColor, 15728880);
+        MinecraftClient.getInstance().textRenderer.draw(name, x, y, color, shadow, matrices.peek().getPositionMatrix(), vertexConsumerProvider, TextRenderer.TextLayerType.NORMAL, 0, 15728880);
     }
 }

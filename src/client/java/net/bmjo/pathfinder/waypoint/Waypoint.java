@@ -4,7 +4,6 @@ import net.bmjo.pathfinder.PathfinderClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.util.SkinTextures;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,12 +12,12 @@ import java.util.function.Supplier;
 
 public class Waypoint {
     private final BlockPos pos;
-    private final Text name;
+    private final String name;
     private final Supplier<SkinTextures> skin;
     private final long created;
     private final boolean farAway;
 
-    private Waypoint(BlockPos pos, Text name, Supplier<SkinTextures> skin, long created) {
+    private Waypoint(BlockPos pos, String name, Supplier<SkinTextures> skin, long created) {
         this.pos = pos;
         this.name = name;
         this.skin = skin;
@@ -26,19 +25,25 @@ public class Waypoint {
         this.farAway = !isClientInRange(this.pos, 10);
     }
 
-    public static Waypoint create(BlockPos pos, UUID owner) { //TODO FIX!!!
-        PlayerListEntry playerListEntry = PathfinderClient.getPlayer().networkHandler.getPlayerListEntry(owner);
-        String name = playerListEntry.getProfile().getName();
-        Text displayName = playerListEntry.getDisplayName();
-        Supplier<SkinTextures> skin = playerListEntry::getSkinTextures;
-        return new Waypoint(pos, displayName != null ? displayName : Text.of(name), skin, System.currentTimeMillis());
+    public static Waypoint create(BlockPos pos, UUID owner) {
+        String name = "";
+        Supplier<SkinTextures> skin = () -> null;
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer != null) {
+            PlayerListEntry playerListEntry = clientPlayer.networkHandler.getPlayerListEntry(owner);
+            if (playerListEntry != null) {
+                name = playerListEntry.getProfile().getName();
+                skin = playerListEntry::getSkinTextures;
+            }
+        }
+        return new Waypoint(pos, name, skin, System.currentTimeMillis());
     }
 
     public BlockPos pos() {
         return this.pos;
     }
 
-    public Text name() {
+    public String name() {
         return this.name;
     }
 
