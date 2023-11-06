@@ -1,4 +1,4 @@
-package net.bmjo.pathfinder.uil;
+package net.bmjo.pathfinder.util;
 
 import net.bmjo.pathfinder.PathfinderClient;
 import net.minecraft.client.network.ClientPlayerEntity;

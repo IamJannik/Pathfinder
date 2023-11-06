@@ -5,6 +5,8 @@
   "client": [
     "ChatMixin",
     "CreateWaypointMixin",
+    "MixinGameRenderer",
+    "MixinInGameHud",
     "SocialPlayerListEntryMixin",
     "SocialScreenMixin"
   ],

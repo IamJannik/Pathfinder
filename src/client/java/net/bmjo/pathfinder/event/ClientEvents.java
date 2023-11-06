@@ -5,7 +5,6 @@ import net.bmjo.pathfinder.networking.ClientNetworking;
 import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.client.option.KeyBinding;
@@ -21,7 +20,6 @@ public class ClientEvents {
             if (System.currentTimeMillis() % 10 * 1000 == 0)
                 WaypointHandler.update();
         });
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(WaypointHandler::render);
     }
 
     static {

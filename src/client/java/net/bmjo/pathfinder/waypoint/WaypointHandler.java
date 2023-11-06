@@ -3,9 +3,8 @@ package net.bmjo.pathfinder.waypoint;
 import net.bmjo.pathfinder.PathfinderClient;
 import net.bmjo.pathfinder.gang.GangHandler;
 import net.bmjo.pathfinder.networking.ClientNetworking;
-import net.bmjo.pathfinder.uil.PathfinderClientUtil;
+import net.bmjo.pathfinder.util.PathfinderClientUtil;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -21,7 +20,7 @@ import net.minecraft.util.math.BlockPos;
 import java.util.*;
 
 public class WaypointHandler {
-    private static final Map<UUID, Waypoint> WAYPOINTS = new HashMap<>();
+    public static final Map<UUID, Waypoint> WAYPOINTS = new HashMap<>();
 
     //CREATE
 
@@ -171,9 +170,5 @@ public class WaypointHandler {
                 remove.add(waypoint.getKey());
         for (UUID uuid : remove)
             removeWaypoint(uuid);
-    }
-
-    public static void render(WorldRenderContext ctx) {
-        WAYPOINTS.values().forEach((waypoint -> waypoint.render(ctx.camera())));
     }
 }
