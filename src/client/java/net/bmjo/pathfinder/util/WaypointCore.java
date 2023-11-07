@@ -1,4 +1,4 @@
-package net.bmjo.pathfinder.waypoint;
+package net.bmjo.pathfinder.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.VertexSorter;

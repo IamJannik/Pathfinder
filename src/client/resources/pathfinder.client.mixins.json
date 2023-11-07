@@ -4,11 +4,13 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "ChatMixin",
-    "CreateWaypointMixin",
     "MixinGameRenderer",
     "MixinInGameHud",
     "SocialPlayerListEntryMixin",
-    "SocialScreenMixin"
+    "SocialScreenMixin",
+    "multikey.KeybindingScreenMixin",
+    "multikey.MixinClient",
+    "multikey.MixinKeyboard"
   ],
   "injectors": {
     "defaultRequire": 1

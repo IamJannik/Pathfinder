@@ -1,6 +1,6 @@
 package net.bmjo.pathfinder.mixin.client;
 
-import net.bmjo.pathfinder.waypoint.WaypointCore;
+import net.bmjo.pathfinder.util.WaypointCore;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;

@@ -1,6 +1,7 @@
 package net.bmjo.pathfinder.event;
 
 import net.bmjo.pathfinder.PathfinderClient;
+import net.bmjo.pathfinder.multikey.MultiKeyBinding;
 import net.bmjo.pathfinder.networking.ClientNetworking;
 import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -17,17 +18,19 @@ public class ClientEvents {
         ServerPlayConnectionEvents.JOIN.register((client, sender, server) -> sender.sendPacket(ClientNetworking.IS_LOADED, PacketByteBufs.create()));
         ServerPlayConnectionEvents.DISCONNECT.register((client, sender) -> PathfinderClient.is_loaded = false);
         ClientTickEvents.END_CLIENT_TICK.register((client) -> {
+            while (keyBinding.wasPressed())
+                WaypointHandler.createWaypoint();
             if (System.currentTimeMillis() % 10 * 1000 == 0)
                 WaypointHandler.update();
         });
     }
 
     static {
-        keyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+        keyBinding = KeyBindingHelper.registerKeyBinding(new MultiKeyBinding(
                 "key.pathfinder.waypoint",
-                InputUtil.Type.MOUSE,
-                GLFW.GLFW_MOUSE_BUTTON_MIDDLE,
-                "category.pathfinder"
+                "category.pathfinder",
+                InputUtil.Type.KEYSYM.createFromCode(GLFW.GLFW_KEY_LEFT_SHIFT),
+                InputUtil.Type.MOUSE.createFromCode(GLFW.GLFW_MOUSE_BUTTON_MIDDLE)
         ));
     }
 }

@@ -19,10 +19,8 @@ public abstract class CreateWaypointMixin {
     @Inject(at = @At("HEAD"), method = "handleInputEvents") //TODO
 	private void run(CallbackInfo ci) {
         PlayerEntity player = PathfinderClient.getPlayer();
-        if (player != null && player.isSneaking()) {
-            while (this.options.pickItemKey.wasPressed()) {
+        if (player != null && player.isSneaking())
+            while (this.options.pickItemKey.wasPressed())
                 WaypointHandler.createWaypoint();
-			}
-		}
 	}
 }

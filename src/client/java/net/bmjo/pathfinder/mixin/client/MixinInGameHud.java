@@ -1,6 +1,6 @@
 package net.bmjo.pathfinder.mixin.client;
 
-import net.bmjo.pathfinder.waypoint.WaypointCore;
+import net.bmjo.pathfinder.util.WaypointCore;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import org.spongepowered.asm.mixin.Mixin;

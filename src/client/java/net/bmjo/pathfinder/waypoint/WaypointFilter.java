@@ -5,11 +5,9 @@ import org.joml.Vector3f;
 import java.util.function.Predicate;
 
 public class WaypointFilter implements Predicate<Waypoint> {
-    public Vector3f lookVector;
-    public double cameraX;
-    public double cameraY;
-    public double cameraZ;
-    public double dimDiv;
+    private Vector3f lookVector;
+    private double cameraX, cameraY, cameraZ;
+    private double dimDiv;
 
     public void setParams(Vector3f lookVector, double cameraX, double cameraY, double cameraZ, double dimDiv) {
         this.lookVector = lookVector;

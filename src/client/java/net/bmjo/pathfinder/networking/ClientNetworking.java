@@ -27,6 +27,6 @@ public class ClientNetworking {
             UUID uuid = buf.readUuid();
             client.execute(() -> WaypointHandler.tryRemoveWaypoint(uuid));
         });
-        ClientPlayNetworking.registerGlobalReceiver(IS_LOADED, (client, handler, buf, responseSender) -> PathfinderClient.is_loaded = false); //TODO true
+        ClientPlayNetworking.registerGlobalReceiver(IS_LOADED, (client, handler, buf, responseSender) -> PathfinderClient.is_loaded = true);
     }
 }
