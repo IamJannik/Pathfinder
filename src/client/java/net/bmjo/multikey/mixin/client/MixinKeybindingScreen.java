@@ -1,6 +1,6 @@
-package net.bmjo.pathfinder.mixin.client.multikey;
+package net.bmjo.multikey.mixin.client;
 
-import net.bmjo.pathfinder.multikey.MultiKeyBinding;
+import net.bmjo.multikey.MultiKeyBinding;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.ControlsListWidget;
 import net.minecraft.client.gui.screen.option.GameOptionsScreen;
@@ -9,7 +9,6 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,10 +20,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Mixin(KeybindsScreen.class)
-public abstract class KeybindingScreenMixin extends GameOptionsScreen {
+public abstract class MixinKeybindingScreen extends GameOptionsScreen {
     @Shadow
     @Nullable
     public KeyBinding selectedKeyBinding;
@@ -36,18 +34,18 @@ public abstract class KeybindingScreenMixin extends GameOptionsScreen {
     private ControlsListWidget controlsList;
 
     @Unique
-    private final Set<Pair<Integer, Integer>> pressedKeys = new HashSet<>();
+    private final Set<InputUtil.Key> pressedKeys = new HashSet<>();
 
-    public KeybindingScreenMixin(Screen parent, GameOptions gameOptions, Text title) {
+    public MixinKeybindingScreen(Screen parent, GameOptions gameOptions, Text title) {
         super(parent, gameOptions, title);
     }
 
 
     @Inject(method = "keyPressed", at = @At(value = "HEAD"), cancellable = true)
-    public void onlySuper(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+    public void isMultiKeyBinding(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) { // anders, so dass es auch set(KeayBinding benutz weden kann
         if (this.selectedKeyBinding instanceof MultiKeyBinding) {
             if (keyCode != 256) {
-                pressedKeys.add(new Pair<>(keyCode, scanCode));
+                pressedKeys.add(InputUtil.fromKeyCode(keyCode, scanCode));
                 cir.setReturnValue(super.keyPressed(keyCode, scanCode, modifiers));
             }
         }
@@ -55,8 +53,28 @@ public abstract class KeybindingScreenMixin extends GameOptionsScreen {
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (this.selectedKeyBinding instanceof MultiKeyBinding multiKeyBinding && !this.pressedKeys.isEmpty()) {
-            multiKeyBinding.setBoundKeys(this.pressedKeys.stream().map(pair -> InputUtil.fromKeyCode(pair.getLeft(), pair.getRight())).collect(Collectors.toSet()));
+        return createMultiKeyBinding() || super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    /*
+    @Inject(method = "mouseClicked", at = @At(value = "HEAD"), cancellable = true)
+    public void isMultiKeyBinding(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+        if (this.selectedKeyBinding instanceof MultiKeyBinding) {
+            pressedKeys.add(InputUtil.Type.MOUSE.createFromCode(button));
+            cir.setReturnValue(super.mouseClicked(mouseX, mouseY, button));
+        }
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        return createMultiKeyBinding() || super.mouseReleased(mouseX, mouseY, button);
+    }
+     */
+
+    @Unique
+    private boolean createMultiKeyBinding() {
+        if (this.selectedKeyBinding instanceof MultiKeyBinding multiKeyBinding) {
+            multiKeyBinding.setBoundKeys(this.pressedKeys);
 
             this.selectedKeyBinding = null;
             this.lastKeyCodeUpdateTime = Util.getMeasuringTimeMs();
@@ -65,6 +83,6 @@ public abstract class KeybindingScreenMixin extends GameOptionsScreen {
             this.pressedKeys.clear();
             return true;
         }
-        return super.keyReleased(keyCode, scanCode, modifiers);
+        return false;
     }
 }

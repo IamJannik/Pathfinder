@@ -7,10 +7,7 @@
     "MixinGameRenderer",
     "MixinInGameHud",
     "SocialPlayerListEntryMixin",
-    "SocialScreenMixin",
-    "multikey.KeybindingScreenMixin",
-    "multikey.MixinClient",
-    "multikey.MixinKeyboard"
+    "SocialScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

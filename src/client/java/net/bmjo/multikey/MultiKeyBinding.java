@@ -1,4 +1,4 @@
-package net.bmjo.pathfinder.multikey;
+package net.bmjo.multikey;
 
 import com.google.common.collect.Sets;
 import net.minecraft.client.MinecraftClient;
@@ -18,7 +18,7 @@ public class MultiKeyBinding extends KeyBinding {
 
     public MultiKeyBinding(String translationKey, String category, InputUtil.Key... keys) {
         super(translationKey, GLFW.GLFW_KEY_UNKNOWN, category);
-        boundKeys = Set.of(keys);
+        boundKeys = keys.length != 0 ? Sets.newHashSet(keys) : Sets.newHashSet(InputUtil.UNKNOWN_KEY);
         defaultKeys = boundKeys;
 
         KEY_BINDINGS.add(this);
@@ -26,20 +26,34 @@ public class MultiKeyBinding extends KeyBinding {
     }
 
     private void safeKeyBindings() {
-        for (InputUtil.Key key : boundKeys)
+        for (InputUtil.Key key : this.boundKeys)
             KEY_TO_BINDINGS.computeIfAbsent(key, k -> Sets.newHashSet(this)).add(this);
     }
 
+    @Override
+    public void setBoundKey(InputUtil.Key boundKey) {
+        this.boundKeys.clear();
+        super.setBoundKey(boundKey);
+    }
 
-    public void setBoundKeys(Set<InputUtil.Key> boundKey) {
-        if (boundKey.isEmpty())
-            return;
-        this.boundKeys = boundKey;
+    public void setBoundKeys(Set<InputUtil.Key> boundKeys) {
+        if (boundKeys.isEmpty()) {
+            this.setBoundKey(InputUtil.UNKNOWN_KEY);
+        } else if (boundKeys.size() == 1) {
+            this.setBoundKey(boundKeys.iterator().next());
+        } else {
+            super.setBoundKey(InputUtil.UNKNOWN_KEY);
+            this.boundKeys = boundKeys;
+        }
     }
 
     @Override
     public boolean equals(KeyBinding other) {
-        return other instanceof MultiKeyBinding multiKeyBinding && this.boundKeys.equals(multiKeyBinding.boundKeys);
+        return !boundKeys.isEmpty() ? other instanceof MultiKeyBinding multiKeyBinding && this.boundKeys.equals(multiKeyBinding.boundKeys) : super.equals(other);
+    }
+
+    public boolean areSubsets(MultiKeyBinding otherKeyBinding) {
+        return this.boundKeys.containsAll(otherKeyBinding.boundKeys) || otherKeyBinding.boundKeys.containsAll(this.boundKeys);
     }
 
     public boolean isUnbound() {
@@ -62,9 +76,17 @@ public class MultiKeyBinding extends KeyBinding {
 
     @Override
     public Text getBoundKeyLocalizedText() {
+        if (this.boundKeys.isEmpty())
+            return super.getBoundKeyLocalizedText();
         StringBuilder text = new StringBuilder();
-        for (InputUtil.Key key : this.boundKeys)
-            text.append(key.getLocalizedText()).append(" + ");
+        Iterator<InputUtil.Key> itr = this.boundKeys.iterator();
+        while (itr.hasNext()) {
+            InputUtil.Key key = itr.next();
+            text.append(key.getLocalizedText().getString());
+            if (itr.hasNext()) {
+                text.append(" + ");
+            }
+        }
         return Text.literal(text.toString());
     }
 
@@ -75,12 +97,23 @@ public class MultiKeyBinding extends KeyBinding {
 
     @Override
     public String getBoundKeyTranslationKey() {
-        return "";
+        if (this.boundKeys.isEmpty())
+            return super.getBoundKeyTranslationKey();
+        StringBuilder text = new StringBuilder();
+        Iterator<InputUtil.Key> itr = this.boundKeys.iterator();
+        while (itr.hasNext()) {
+            InputUtil.Key key = itr.next();
+            text.append(key.getTranslationKey());
+            if (itr.hasNext()) {
+                text.append(" + ");
+            }
+        }
+        return text.toString();
     }
 
-    public boolean allPressed() {
-        long handle = MinecraftClient.getInstance().getWindow().getHandle();
-        return this.defaultKeys.stream().allMatch(k -> InputUtil.isKeyPressed(handle, k.getCode()));
+    public boolean allPressed() { //TODO auhc wenn einzeln ist
+        long window = MinecraftClient.getInstance().getWindow().getHandle();
+        return this.defaultKeys.stream().allMatch(k -> InputUtil.isKeyPressed(window, k.getCode()));
     }
 
     @Override
@@ -104,11 +137,7 @@ public class MultiKeyBinding extends KeyBinding {
 
     public void disableOtherBindings() {
         for (InputUtil.Key key : this.boundKeys)
-            KeyBinding.setKeyPressed(key, false); // OR RESET
-    }
-
-    public static Set<MultiKeyBinding> getMultiKeyBinding() {
-        return KEY_BINDINGS;
+            KeyBinding.setKeyPressed(key, false);
     }
 
     public static Set<MultiKeyBinding> getMultiKeyBinding(InputUtil.Key key) {
@@ -130,5 +159,4 @@ public class MultiKeyBinding extends KeyBinding {
         for (MultiKeyBinding multiKeyBinding : KEY_BINDINGS)
             multiKeyBinding.safeKeyBindings();
     }
-    //TODO are same teilmenge
 }

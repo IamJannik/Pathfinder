@@ -4,6 +4,7 @@ import net.bmjo.pathfinder.PathfinderClient;
 import net.bmjo.pathfinder.gang.GangHandler;
 import net.bmjo.pathfinder.networking.ClientNetworking;
 import net.bmjo.pathfinder.util.PathfinderClientUtil;
+import net.bmjo.pathfinder.util.PathfinderSounds;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
@@ -11,6 +12,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
@@ -21,10 +23,13 @@ import java.util.*;
 
 public class WaypointHandler {
     public static final Map<UUID, Waypoint> WAYPOINTS = new HashMap<>();
-
+    private static int messageCooldown;
     //CREATE
 
     private static void addWaypoint(UUID owner, BlockPos blockPos) {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer != null)
+            clientPlayer.playSound(PathfinderSounds.WAYPOINT_CREATE, SoundCategory.NEUTRAL, 1.0F, 1.0F);
         WAYPOINTS.put(owner, Waypoint.create(blockPos, owner));
     }
 
@@ -32,13 +37,10 @@ public class WaypointHandler {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer != null && clientPlayer.getUuid().equals(owner))
             return;
-        if (PathfinderClient.use_gang) {
-            if (GangHandler.isMember(owner))
-                addWaypoint(owner, blockPos);
-        } else {
-            if (PathfinderClientUtil.isInTeam(owner))
-                addWaypoint(owner, blockPos);
-        }
+        if (PathfinderClient.use_gang)
+            addWaypoint(owner, blockPos);
+        else
+            addWaypoint(owner, blockPos);
     }
 
     public static void createWaypoint() {
@@ -52,7 +54,9 @@ public class WaypointHandler {
             deleteWaypoint();
         else {
             addWaypoint(uuid, hitPos);
-            sendCreate(hitPos);
+            if (canSend()) {
+                sendCreate(hitPos);
+            }
         }
     }
 
@@ -163,11 +167,23 @@ public class WaypointHandler {
     }
 
     public static void update() {
-        Set<UUID> remove = new HashSet<>(WAYPOINTS.size());
-        for (Map.Entry<UUID, Waypoint> waypoint : WAYPOINTS.entrySet())
-            if (waypoint.getValue().tryRemove())
-                remove.add(waypoint.getKey());
-        for (UUID uuid : remove)
-            removeWaypoint(uuid);
+        if (messageCooldown > 0) {
+            --messageCooldown;
+        }
+
+        if (System.currentTimeMillis() % 10 * 1000 == 0) {
+            Set<UUID> remove = new HashSet<>(WAYPOINTS.size());
+            for (Map.Entry<UUID, Waypoint> waypoint : WAYPOINTS.entrySet())
+                if (waypoint.getValue().tryRemove())
+                    remove.add(waypoint.getKey());
+            for (UUID uuid : remove)
+                removeWaypoint(uuid);
+        }
+
+    }
+
+    private static boolean canSend() {
+        messageCooldown += 20;
+        return messageCooldown < 200;
     }
 }

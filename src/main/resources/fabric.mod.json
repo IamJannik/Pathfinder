@@ -23,9 +23,12 @@
 		]
 	},
 	"mixins": [
-		"pathfinder.mixins.json",
 		{
 			"config": "pathfinder.client.mixins.json",
+			"environment": "client"
+		},
+		{
+			"config": "multikey.client.mixins.json",
 			"environment": "client"
 		}
 	],

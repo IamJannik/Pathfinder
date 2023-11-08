@@ -1,6 +1,6 @@
-package net.bmjo.pathfinder.mixin.client.multikey;
+package net.bmjo.multikey.mixin.client;
 
-import net.bmjo.pathfinder.multikey.MultiKeyBinding;
+import net.bmjo.multikey.MultiKeyBinding;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.util.InputUtil;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,8 +17,8 @@ public class MixinKeyboard {
             if (multiKeyBinding.allPressed()) {
                 multiKeyBinding.setPressed(true);
                 multiKeyBinding.onPressed();
-                multiKeyBinding.disableOtherBindings();
-                ci.cancel();
+                //multiKeyBinding.disableOtherBindings();
+                ci.cancel(); // only first
             }
         }
     }

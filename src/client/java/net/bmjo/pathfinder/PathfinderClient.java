@@ -2,6 +2,7 @@ package net.bmjo.pathfinder;
 
 import net.bmjo.pathfinder.event.ClientEvents;
 import net.bmjo.pathfinder.networking.ClientNetworking;
+import net.bmjo.pathfinder.util.PathfinderSounds;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -21,6 +22,7 @@ public class PathfinderClient implements ClientModInitializer {
 		LOGGER.info("Build Client for " + MOD_ID);
 		ClientEvents.register();
 		ClientNetworking.register();
+		PathfinderSounds.registerSounds();
 	}
 
 	public static Identifier identifier(String name) {

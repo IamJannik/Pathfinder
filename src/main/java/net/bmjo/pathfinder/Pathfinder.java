@@ -2,9 +2,7 @@ package net.bmjo.pathfinder;
 
 import net.bmjo.pathfinder.networking.ServerNetworking;
 import net.fabricmc.api.ModInitializer;
-
 import net.minecraft.util.Identifier;
-import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

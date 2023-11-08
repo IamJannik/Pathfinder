@@ -1,0 +1,8 @@
+{
+  "waypoint_create": {
+    "subtitle": "subtitles.pathfinder.waypoint_create",
+    "sounds": [
+      "pathfinder:waypoint_create"
+    ]
+  }
+}
