@@ -1,6 +1,7 @@
 package net.bmjo.multikey.mixin.client;
 
 import net.bmjo.multikey.MultiKeyBinding;
+import net.bmjo.multikey.annotation.Unfinished;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.ControlsListWidget;
 import net.minecraft.client.gui.screen.option.GameOptionsScreen;
@@ -21,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.HashSet;
 import java.util.Set;
 
+@Unfinished
 @Mixin(KeybindsScreen.class)
 public abstract class MixinKeybindingScreen extends GameOptionsScreen {
     @Shadow
@@ -33,6 +35,9 @@ public abstract class MixinKeybindingScreen extends GameOptionsScreen {
     @Shadow
     private ControlsListWidget controlsList;
 
+    @Shadow
+    public abstract boolean keyPressed(int keyCode, int scanCode, int modifiers);
+
     @Unique
     private final Set<InputUtil.Key> pressedKeys = new HashSet<>();
 
@@ -42,7 +47,7 @@ public abstract class MixinKeybindingScreen extends GameOptionsScreen {
 
 
     @Inject(method = "keyPressed", at = @At(value = "HEAD"), cancellable = true)
-    public void isMultiKeyBinding(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) { // anders, so dass es auch set(KeayBinding benutz weden kann
+    public void isMultiKeyBinding(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (this.selectedKeyBinding instanceof MultiKeyBinding) {
             if (keyCode != 256) {
                 pressedKeys.add(InputUtil.fromKeyCode(keyCode, scanCode));
@@ -56,7 +61,6 @@ public abstract class MixinKeybindingScreen extends GameOptionsScreen {
         return createMultiKeyBinding() || super.keyReleased(keyCode, scanCode, modifiers);
     }
 
-    /*
     @Inject(method = "mouseClicked", at = @At(value = "HEAD"), cancellable = true)
     public void isMultiKeyBinding(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
         if (this.selectedKeyBinding instanceof MultiKeyBinding) {
@@ -69,11 +73,10 @@ public abstract class MixinKeybindingScreen extends GameOptionsScreen {
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         return createMultiKeyBinding() || super.mouseReleased(mouseX, mouseY, button);
     }
-     */
 
     @Unique
     private boolean createMultiKeyBinding() {
-        if (this.selectedKeyBinding instanceof MultiKeyBinding multiKeyBinding) {
+        if (this.selectedKeyBinding != null && this.selectedKeyBinding instanceof MultiKeyBinding multiKeyBinding && !this.pressedKeys.isEmpty()) {
             multiKeyBinding.setBoundKeys(this.pressedKeys);
 
             this.selectedKeyBinding = null;

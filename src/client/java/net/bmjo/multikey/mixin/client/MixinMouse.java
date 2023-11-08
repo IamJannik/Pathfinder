@@ -17,7 +17,6 @@ public class MixinMouse {
             if (multiKeyBinding.allPressed()) {
                 multiKeyBinding.setPressed(true);
                 multiKeyBinding.onPressed();
-                //multiKeyBinding.disableOtherBindings();
                 ci.cancel();
             }
         }

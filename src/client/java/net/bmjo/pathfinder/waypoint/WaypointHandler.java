@@ -184,6 +184,6 @@ public class WaypointHandler {
 
     private static boolean canSend() {
         messageCooldown += 20;
-        return messageCooldown < 200;
+        return messageCooldown < 100;
     }
 }

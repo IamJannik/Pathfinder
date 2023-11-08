@@ -17,8 +17,7 @@ public class MixinKeyboard {
             if (multiKeyBinding.allPressed()) {
                 multiKeyBinding.setPressed(true);
                 multiKeyBinding.onPressed();
-                //multiKeyBinding.disableOtherBindings();
-                ci.cancel(); // only first
+                ci.cancel();
             }
         }
     }

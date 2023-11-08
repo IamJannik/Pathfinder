@@ -6,6 +6,7 @@
     "MixinClient",
     "MixinKeybindingScreen",
     "MixinKeyboard",
+    "MixinKeyButton",
     "MixinMouse"
   ],
   "injectors": {
