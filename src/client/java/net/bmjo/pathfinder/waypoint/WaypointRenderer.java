@@ -12,7 +12,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -80,25 +79,18 @@ public final class WaypointRenderer {
             Entity entity = MC.getCameraEntity();
             Camera activeRender = MC.gameRenderer.getCamera();
             assert entity != null;
-            double dimDiv = MC.world.getDimension().coordinateScale();
-            double entityX = entity.getX();
-            double entityY = entity.getY();
-            double entityZ = entity.getZ();
+            Vec3d entityPos = entity.getPos();
             Vec3d cameraPos = activeRender.getPos();
-            double cameraX = cameraPos.getX();
-            double cameraY = cameraPos.getY();
-            double cameraZ = cameraPos.getZ();
 
             Vector3f lookVector = activeRender.getHorizontalPlane().get(new Vector3f());
-            this.filter.setParams(lookVector, cameraX, cameraY, cameraZ, dimDiv);
+            this.filter.setParams(lookVector, cameraPos);
             Stream<Waypoint> waypointStream = waypoints.stream().filter(this.filter);
 
-            float cameraAngleYaw = activeRender.getYaw();
             double fov = MC.options.getFov().getValue().doubleValue();
             double clampDepth = getWaypointsClampDepth(fov, MC.getWindow().getFramebufferHeight());
 
             VertexConsumerProvider.Immediate vertexConsumerProvider = this.matrixStackOverlay.getVertexConsumers();
-            this.renderWaypoints(waypointStream.iterator(), cameraX, cameraY, cameraZ, entity, dimDiv, entityX, entityY, entityZ, cameraAngleYaw, lookVector, clampDepth, vertexConsumerProvider, waypointsProjection);
+            this.renderWaypoints(waypointStream.iterator(), cameraPos, entity, entityPos, lookVector, clampDepth, vertexConsumerProvider, waypointsProjection);
         }
 
         matrixStackOverlay.pop();
@@ -109,7 +101,7 @@ public final class WaypointRenderer {
         matrixStack.pop();
     }
 
-    private void renderWaypoints(Iterator<Waypoint> iter, double cameraX, double cameraY, double cameraZ, Entity entity, double dimDiv, double actualEntityX, double actualEntityY, double actualEntityZ, float cameraAngleYaw, Vector3f lookVector, double clampDepth, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection) {
+    private void renderWaypoints(Iterator<Waypoint> iter, Vec3d cameraPos, Entity entity, Vec3d entityPos, Vector3f lookVector, double clampDepth, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
         matrixStackOverlay.translate(0.0F, 0.0F, -2980.0F);
 
@@ -119,7 +111,7 @@ public final class WaypointRenderer {
 
         while (iter.hasNext()) {
             Waypoint waypoint = iter.next();
-            this.renderWaypoint(waypoint, cameraAngleYaw, lookVector, clampDepth, cameraX, cameraY, cameraZ, dimDiv, actualEntityX, actualEntityY, actualEntityZ, vertexConsumerProvider, waypointsProjection, false, showAllInfo);
+            this.renderWaypoint(waypoint, lookVector, clampDepth, cameraPos, entityPos, vertexConsumerProvider, waypointsProjection, false, showAllInfo);
             ++count;
             if (count < 19500) {
                 matrixStackOverlay.translate(0.0F, 0.0F, 0.1F);
@@ -127,7 +119,7 @@ public final class WaypointRenderer {
         }
 
         if (!showAllInfo && this.previousClosest != null) {
-            this.renderWaypoint(this.previousClosest, cameraAngleYaw, lookVector, clampDepth, cameraX, cameraY, cameraZ, dimDiv, actualEntityX, actualEntityY, actualEntityZ, vertexConsumerProvider, waypointsProjection, true, false);
+            this.renderWaypoint(this.previousClosest, lookVector, clampDepth, cameraPos, entityPos, vertexConsumerProvider, waypointsProjection, true, false);
         }
 
         this.previousClosest = this.closestWaypoint;
@@ -135,16 +127,16 @@ public final class WaypointRenderer {
         RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
     }
 
-    private void renderWaypoint(Waypoint waypoint, float cameraAngleYaw, Vector3f lookVector, double depthClamp, double cameraX, double cameraY, double cameraZ, double dimDiv, double actualEntityX, double actualEntityY, double actualEntityZ, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, boolean isTheMain, boolean showAllInfo) {
+    private void renderWaypoint(Waypoint waypoint, Vector3f lookVector, double depthClamp, Vec3d cameraPos, Vec3d entityPos, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, boolean isTheMain, boolean showAllInfo) {
         MatrixStack matrixStack = this.matrixStack.getMatrices();
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
 
-        int wX = waypoint.posX(dimDiv);
-        int wZ = waypoint.posZ(dimDiv);
+        int wX = waypoint.posX();
+        int wZ = waypoint.posZ();
 
-        double offX = (double) wX - cameraX + 0.5;
-        double offY = (double) waypoint.posY(1) - cameraY + 1.0;
-        double offZ = (double) wZ - cameraZ + 0.5;
+        double offX = (double) wX - cameraPos.getX() + 0.5;
+        double offY = (double) waypoint.posY() - cameraPos.getY() + 1.0;
+        double offZ = (double) wZ - cameraPos.getZ() + 0.5;
 
         double distance2D = Math.sqrt(offX * offX + offZ * offZ);
 
@@ -153,18 +145,18 @@ public final class WaypointRenderer {
             String distanceText = "";
 
             double depth = offX * (double) lookVector.x() + offY * (double) lookVector.y() + offZ * (double) lookVector.z();
-            double correctOffX = actualEntityX - (double) wX - 0.5;
-            double correctOffY = actualEntityY - (double) waypoint.posY(1);
+            double correctOffX = entityPos.getX() - (double) wX - 0.5;
+            double correctOffY = entityPos.getY() - (double) waypoint.posY();
 
             double distance = Math.sqrt(offX * offX + offY * offY + offZ * offZ);
-            double correctOffZ = actualEntityZ - (double) wZ - 0.5;
+            double correctOffZ = entityPos.getZ() - (double) wZ - 0.5;
             double correctDistance = Math.sqrt(correctOffX * correctOffX + correctOffY * correctOffY + correctOffZ * correctOffZ);
 
             if (correctDistance > 10.0D) {
-                boolean couldShowDistance = couldShowDistance(cameraAngleYaw, offZ, offX);
-                boolean showDistance = couldShowDistance && shouldShowDistance(waypoint, isTheMain, showAllInfo, depth, distance);
+                boolean couldShowLabels = waypoint.getAngelToWaypoint() < 10;
+                boolean showDLabels = couldShowLabels && shouldShowDistance(waypoint, isTheMain, showAllInfo, depth, distance);
 
-                if (showDistance) {
+                if (showDLabels) {
                     if (correctDistance >= 10000.0D) { //KM
                         distanceText = new DecimalFormat("0.0").format(correctDistance / 1000.0) + "km";
                     } else {
@@ -205,21 +197,6 @@ public final class WaypointRenderer {
             }
             return showAllInfo;
         }
-    }
-
-    private static boolean couldShowDistance(float cameraAngleYaw, double offZ, double offX) {
-        float Z = (float) (offZ == 0.0D ? 0.001F : offZ);
-        float angle = (float) Math.toDegrees(Math.atan(-offX / (double) Z));
-        if (offZ < 0.0) {
-            if (offX < 0.0) {
-                angle += 180.0F;
-            } else {
-                angle -= 180.0F;
-            }
-        }
-
-        float offset = MathHelper.wrapDegrees(angle - cameraAngleYaw);
-        return Math.abs(offset) < 10;
     }
 
     private void drawAsOverlay(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, double depthClamp, double depth) {

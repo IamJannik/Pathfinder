@@ -1,14 +1,13 @@
-package net.bmjo.pathfinder.util;
+package net.bmjo.pathfinder.waypoint;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.VertexSorter;
-import net.bmjo.pathfinder.waypoint.WaypointRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 
-public class WaypointCore {
+public class WaypointModel {
     private static boolean renderingWorld = false;
     private static final Matrix4f waypointsProjection = new Matrix4f();
     private static final Matrix4f waypointModelView = new Matrix4f();

@@ -13,19 +13,19 @@ import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
 public class ClientEvents {
-    public static final KeyBinding keyBinding;
+    public static final KeyBinding waypointKey;
     public static void register() {
         ServerPlayConnectionEvents.JOIN.register((client, sender, server) -> sender.sendPacket(ClientNetworking.IS_LOADED, PacketByteBufs.create()));
         ServerPlayConnectionEvents.DISCONNECT.register((client, sender) -> PathfinderClient.is_loaded = false);
         ClientTickEvents.END_CLIENT_TICK.register((client) -> {
             WaypointHandler.update();
-            while (keyBinding.wasPressed())
+            while (waypointKey.wasPressed())
                 WaypointHandler.createWaypoint();
         });
     }
 
     static {
-        keyBinding = KeyBindingHelper.registerKeyBinding(new MultiKeyBinding(
+        waypointKey = KeyBindingHelper.registerKeyBinding(new MultiKeyBinding(
                 "key.pathfinder.waypoint",
                 "category.pathfinder",
                 false,

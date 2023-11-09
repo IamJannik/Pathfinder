@@ -37,10 +37,13 @@ public class WaypointHandler {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer != null && clientPlayer.getUuid().equals(owner))
             return;
-        if (PathfinderClient.use_gang)
-            addWaypoint(owner, blockPos);
-        else
-            addWaypoint(owner, blockPos);
+        if (PathfinderClient.use_gang) {
+            if (GangHandler.isMember(owner))
+                addWaypoint(owner, blockPos);
+        } else {
+            if (PathfinderClientUtil.isInTeam(owner))
+                addWaypoint(owner, blockPos);
+        }
     }
 
     public static void createWaypoint() {
@@ -50,8 +53,9 @@ public class WaypointHandler {
             return;
         UUID uuid = player.getUuid();
         BlockPos hitPos = blockHitResult.getBlockPos();
-        if (WAYPOINTS.containsKey(uuid) && WAYPOINTS.get(uuid).pos().isWithinDistance(hitPos, 3))
+        if (WAYPOINTS.containsKey(uuid) && Waypoint.getAngelToWaypoint(WAYPOINTS.get(uuid).pos()) < 10) {
             deleteWaypoint();
+        }
         else {
             addWaypoint(uuid, hitPos);
             if (canSend()) {

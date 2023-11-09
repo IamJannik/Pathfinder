@@ -1,10 +1,14 @@
 package net.bmjo.pathfinder.waypoint;
 
 import net.bmjo.pathfinder.PathfinderClient;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -22,7 +26,7 @@ public class Waypoint {
         this.name = name;
         this.skin = skin;
         this.created = created;
-        this.farAway = !isClientInRange(this.pos, 10);
+        this.farAway = !this.isClientInRange(10);
     }
 
     public static Waypoint create(BlockPos pos, UUID owner) {
@@ -52,24 +56,56 @@ public class Waypoint {
         return this.skin.get();
     }
 
-    public int posX(double dimDiv) {
-        return dimDiv == 1.0 ? this.pos.getX() : (int) Math.floor((double) this.pos.getX() / dimDiv);
+    public int posX() {
+        return this.pos.getX();
     }
 
-    public int posY(double dimDiv) {
-        return dimDiv == 1.0 ? this.pos.getY() : (int) Math.floor((double) this.pos.getY() / dimDiv);
+    public int posY() {
+        return this.pos.getY();
     }
 
-    public int posZ(double dimDiv) {
-        return dimDiv == 1.0 ? this.pos.getZ() : (int) Math.floor((double) this.pos.getZ() / dimDiv);
+    public int posZ() {
+        return this.pos.getZ();
     }
 
     public boolean tryRemove() {
-        return System.currentTimeMillis() - this.created >= 10 * 60 * 1000 || this.farAway && isClientInRange(this.pos, 3);
+        return System.currentTimeMillis() - this.created >= 10 * 60 * 1000 || this.farAway && this.isClientInRange(3);
     }
 
-    private static boolean isClientInRange(BlockPos pos, int distance) {
+    private boolean isClientInRange(int distance) {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
-        return player != null && player.getBlockPos().isWithinDistance(pos, distance);
+        return player != null && player.getBlockPos().isWithinDistance(this.pos, distance);
+    }
+
+    public float getAngelToWaypoint() {
+        return getAngelToWaypoint(this.pos());
+    }
+
+    public static float getAngelToWaypoint(BlockPos blockPos) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+
+        assert mc.world != null;
+        int wX = blockPos.getX();
+        int wY = blockPos.getY();
+        int wZ = blockPos.getZ();
+
+        Camera camera = mc.gameRenderer.getCamera();
+        Vec3d cameraPos = camera.getPos();
+        double offX = (double) wX - cameraPos.getX() + 0.5;
+        double offY = (double) wY - cameraPos.getY() + 1.0;
+        double offZ = (double) wZ - cameraPos.getZ() + 0.5;
+
+        float Z = (float) (offZ == 0.0D ? 0.001F : offZ);
+        float angle = (float) Math.toDegrees(Math.atan(-offX / (double) Z));
+        if (offZ < 0.0) {
+            if (offX < 0.0) {
+                angle += 180.0F;
+            } else {
+                angle -= 180.0F;
+            }
+        }
+
+        float offset = MathHelper.wrapDegrees(angle - camera.getYaw());
+        return Math.abs(offset);
     }
 }

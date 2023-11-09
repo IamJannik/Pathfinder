@@ -1,0 +1,10 @@
+{
+  "category.pathfinder": "Pathfinder",
+  "key.pathfinder.waypoint": "创建航点",
+  "pathfinder.team.gang_tab": "帮派",
+  "pathfinder.gang.add": "添加到帮派",
+  "pathfinder.gang.remove": "踢出帮派",
+  "pathfinder.gang.use_gang": "与帮派分享",
+  "pathfinder.gang.use_team": "与团队分享",
+  "subtitles.pathfinder.waypoint_create": "创建航点"
+}

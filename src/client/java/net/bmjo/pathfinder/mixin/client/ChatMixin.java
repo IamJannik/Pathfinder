@@ -18,10 +18,10 @@ import java.util.regex.Pattern;
 
 @Mixin(MessageHandler.class)
 public class ChatMixin {
-    //@Inject(method = "onChatMessage", at = @At(value = "INVOKE", target = "Ljava/time/Instant;now()Ljava/time/Instant;"), cancellable = true)
     @Inject(method = "processChatMessageInternal", at = @At(value = "HEAD"), cancellable = true)
     public void isPFMessage(MessageType.Parameters params, SignedMessage message, Text decorated, GameProfile sender, boolean onlyShowSecureChat, Instant receptionTimestamp, CallbackInfoReturnable<Boolean> cir) {
         String msg = message.getContent().getString();
+        System.out.println(msg);
         if (msg.contains("Lets meet here: X:")) {
             int[] cords = new int[3];
             Pattern pattern = Pattern.compile("-?\\d+");

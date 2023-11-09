@@ -1,28 +1,25 @@
 package net.bmjo.pathfinder.waypoint;
 
+import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
 import java.util.function.Predicate;
 
 public class WaypointFilter implements Predicate<Waypoint> {
     private Vector3f lookVector;
-    private double cameraX, cameraY, cameraZ;
-    private double dimDiv;
+    private Vec3d cameraPos;
 
-    public void setParams(Vector3f lookVector, double cameraX, double cameraY, double cameraZ, double dimDiv) {
+    public void setParams(Vector3f lookVector, Vec3d cameraPos) {
         this.lookVector = lookVector;
-        this.cameraX = cameraX;
-        this.cameraY = cameraY;
-        this.cameraZ = cameraZ;
-        this.dimDiv = dimDiv;
+        this.cameraPos = cameraPos;
     }
 
     @Override
     public boolean test(Waypoint waypoint) {
-        double offX = waypoint.posX(this.dimDiv) - this.cameraX + 0.5;
-        double offY = waypoint.posY(1) - this.cameraY + 1.0;
+        double offX = waypoint.posX() - this.cameraPos.getX() + 0.5;
+        double offY = waypoint.posY() - this.cameraPos.getY() + 1.0;
+        double offZ = waypoint.posZ() - this.cameraPos.getZ() + 0.5;
 
-        double offZ = waypoint.posZ(this.dimDiv) - this.cameraZ + 0.5;
         double depth = offX * (double) this.lookVector.x() + offY * (double) this.lookVector.y() + offZ * (double) this.lookVector.z();
         if (depth <= 0.1) {
             return false;

@@ -1,0 +1,10 @@
+{
+  "category.pathfinder": "Pathfinder",
+  "key.pathfinder.waypoint": "Wegpunkt erstellen",
+  "pathfinder.team.gang_tab": "Bande",
+  "pathfinder.gang.add": "Zur Bande hinzufügen",
+  "pathfinder.gang.remove": "Aus Bande werfen",
+  "pathfinder.gang.use_gang": "Mit Bande teilen",
+  "pathfinder.gang.use_team": "Mit Team teilen",
+  "subtitles.pathfinder.waypoint_create": "Wegpunkt erstellt"
+}

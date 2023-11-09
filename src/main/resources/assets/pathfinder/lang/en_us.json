@@ -4,7 +4,7 @@
   "pathfinder.team.gang_tab": "Gang",
   "pathfinder.gang.add": "Add to gang",
   "pathfinder.gang.remove": "Kick out of gang",
-  "pathfinder.gang.use_gang": "Use Gang",
-  "pathfinder.gang.use_team": "Use Team",
-  "subtitles.pathfinder.waypoint_create": "Create Waypoint"
+  "pathfinder.gang.use_gang": "Share with Gang",
+  "pathfinder.gang.use_team": "Share with Team",
+  "subtitles.pathfinder.waypoint_create": "Created Waypoint"
 }
