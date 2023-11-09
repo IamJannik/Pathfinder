@@ -50,7 +50,7 @@ public class WaypointHandler {
             return;
         UUID uuid = player.getUuid();
         BlockPos hitPos = blockHitResult.getBlockPos();
-        if (WAYPOINTS.containsKey(uuid) && WAYPOINTS.get(uuid).pos().isWithinDistance(hitPos, 3)) // TODO or not when near
+        if (WAYPOINTS.containsKey(uuid) && WAYPOINTS.get(uuid).pos().isWithinDistance(hitPos, 3))
             deleteWaypoint();
         else {
             addWaypoint(uuid, hitPos);
@@ -167,9 +167,8 @@ public class WaypointHandler {
     }
 
     public static void update() {
-        if (messageCooldown > 0) {
+        if (messageCooldown > 0)
             --messageCooldown;
-        }
 
         if (System.currentTimeMillis() % 10 * 1000 == 0) {
             Set<UUID> remove = new HashSet<>(WAYPOINTS.size());
@@ -179,7 +178,6 @@ public class WaypointHandler {
             for (UUID uuid : remove)
                 removeWaypoint(uuid);
         }
-
     }
 
     private static boolean canSend() {

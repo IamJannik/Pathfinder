@@ -1,9 +1,6 @@
-package net.bmjo.pathfinder.waypoint.render;
+package net.bmjo.pathfinder.waypoint;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.bmjo.pathfinder.waypoint.Waypoint;
-import net.bmjo.pathfinder.waypoint.WaypointFilter;
-import net.bmjo.pathfinder.waypoint.WaypointHandler;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -71,36 +68,37 @@ public final class WaypointRenderer {
         MatrixStack matrixStack = this.matrixStack.getMatrices();
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
 
-        Entity entity = MC.getCameraEntity();
-        Camera activeRender = MC.gameRenderer.getCamera();
-        assert entity != null;
-        double actualEntityX = entity.getX();
-        double actualEntityY = entity.getY();
-        double actualEntityZ = entity.getZ();
-        Vec3d cameraPos = activeRender.getPos();
-        double cameraX = cameraPos.getX();
-        double cameraY = cameraPos.getY();
-        double cameraZ = cameraPos.getZ();
         RenderSystem.disableCull();
         matrixStack.push();
         matrixStack.peek().getPositionMatrix().mul(worldModelView);
         DiffuseLighting.disableGuiDepthLighting();
-        double fov = MC.options.getFov().getValue().doubleValue();
-        float cameraAngleYaw = activeRender.getYaw();
-        Vector3f lookVector = activeRender.getHorizontalPlane().get(new Vector3f());
-        double clampDepth = getWaypointsClampDepth(fov, MC.getWindow().getFramebufferHeight());
-        assert MC.world != null;
-        double dimDiv = MC.world.getDimension().coordinateScale();
-        List<Waypoint> waypoints = new ArrayList<>(WaypointHandler.WAYPOINTS.values());
 
         matrixStackOverlay.push();
-        matrixStackOverlay.translate(0.0F, 0.0F, -2980.0F);
-        if (!waypoints.isEmpty()) {
+
+        List<Waypoint> waypoints = new ArrayList<>(WaypointHandler.WAYPOINTS.values());
+        if (!waypoints.isEmpty() && MC.world != null) {
+            Entity entity = MC.getCameraEntity();
+            Camera activeRender = MC.gameRenderer.getCamera();
+            assert entity != null;
+            double dimDiv = MC.world.getDimension().coordinateScale();
+            double entityX = entity.getX();
+            double entityY = entity.getY();
+            double entityZ = entity.getZ();
+            Vec3d cameraPos = activeRender.getPos();
+            double cameraX = cameraPos.getX();
+            double cameraY = cameraPos.getY();
+            double cameraZ = cameraPos.getZ();
+
+            Vector3f lookVector = activeRender.getHorizontalPlane().get(new Vector3f());
             this.filter.setParams(lookVector, cameraX, cameraY, cameraZ, dimDiv);
             Stream<Waypoint> waypointStream = waypoints.stream().filter(this.filter);
 
+            float cameraAngleYaw = activeRender.getYaw();
+            double fov = MC.options.getFov().getValue().doubleValue();
+            double clampDepth = getWaypointsClampDepth(fov, MC.getWindow().getFramebufferHeight());
+
             VertexConsumerProvider.Immediate vertexConsumerProvider = this.matrixStackOverlay.getVertexConsumers();
-            this.renderWaypoints(waypointStream.iterator(), cameraX, cameraY, cameraZ, entity, dimDiv, actualEntityX, actualEntityY, actualEntityZ, cameraAngleYaw, lookVector, clampDepth, vertexConsumerProvider, waypointsProjection);
+            this.renderWaypoints(waypointStream.iterator(), cameraX, cameraY, cameraZ, entity, dimDiv, entityX, entityY, entityZ, cameraAngleYaw, lookVector, clampDepth, vertexConsumerProvider, waypointsProjection);
         }
 
         matrixStackOverlay.pop();
@@ -113,6 +111,7 @@ public final class WaypointRenderer {
 
     private void renderWaypoints(Iterator<Waypoint> iter, double cameraX, double cameraY, double cameraZ, Entity entity, double dimDiv, double actualEntityX, double actualEntityY, double actualEntityZ, float cameraAngleYaw, Vector3f lookVector, double clampDepth, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
+        matrixStackOverlay.translate(0.0F, 0.0F, -2980.0F);
 
         int count = 0;
         this.closestWaypoint = null;
@@ -147,18 +146,20 @@ public final class WaypointRenderer {
         double offY = (double) waypoint.posY(1) - cameraY + 1.0;
         double offZ = (double) wZ - cameraZ + 0.5;
 
-        double depth = offX * (double) lookVector.x() + offY * (double) lookVector.y() + offZ * (double) lookVector.z();
-        double correctOffX = actualEntityX - (double) wX - 0.5;
-        double correctOffY = actualEntityY - (double) waypoint.posY(1);
-
-        double correctOffZ = actualEntityZ - (double) wZ - 0.5;
-        double correctDistance = Math.sqrt(correctOffX * correctOffX + correctOffY * correctOffY + correctOffZ * correctOffZ);
         double distance2D = Math.sqrt(offX * offX + offZ * offZ);
-        double distance = Math.sqrt(offX * offX + offY * offY + offZ * offZ);
 
         if (distance2D >= 0.0D) {
             String name = waypoint.name();
             String distanceText = "";
+
+            double depth = offX * (double) lookVector.x() + offY * (double) lookVector.y() + offZ * (double) lookVector.z();
+            double correctOffX = actualEntityX - (double) wX - 0.5;
+            double correctOffY = actualEntityY - (double) waypoint.posY(1);
+
+            double distance = Math.sqrt(offX * offX + offY * offY + offZ * offZ);
+            double correctOffZ = actualEntityZ - (double) wZ - 0.5;
+            double correctDistance = Math.sqrt(correctOffX * correctOffX + correctOffY * correctOffY + correctOffZ * correctOffZ);
+
             if (correctDistance > 10.0D) {
                 boolean couldShowDistance = couldShowDistance(cameraAngleYaw, offZ, offX);
                 boolean showDistance = couldShowDistance && shouldShowDistance(waypoint, isTheMain, showAllInfo, depth, distance);
@@ -235,10 +236,10 @@ public final class WaypointRenderer {
             float scale = (float) (depthClamp / depth);
             matrixStackOverlay.scale(scale, scale, scale);
         }
-        this.drawIconInWorld(waypoint, name, distance, vertexConsumerProvider);
+        this.drawPlayerHead(waypoint, name, distance, vertexConsumerProvider);
     }
 
-    private void drawIconInWorld(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider) {
+    private void drawPlayerHead(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
 
         int iconScale = 2;
@@ -283,7 +284,7 @@ public final class WaypointRenderer {
         }
 
         matrixStackOverlay.scale((float) labelScale, (float) labelScale, 1.0F);
-        drawNormalText(matrixStackOverlay, label, (float) (-halfBgW + 2), 1.0F, -1, false, vertexConsumerProvider);
+        MinecraftClient.getInstance().textRenderer.draw(label, -halfBgW + 2, 1.0F, -1, false, matrixStackOverlay.peek().getPositionMatrix(), vertexConsumerProvider, TextRenderer.TextLayerType.NORMAL, 0, 15728880);
         matrixStackOverlay.translate(0.0F, 9.0F, 0.0F);
         matrixStackOverlay.scale((float) (1.0 / labelScale), (float) (1.0 / labelScale), 1.0F);
         if ((bgW & 1) != 0) {
@@ -298,9 +299,5 @@ public final class WaypointRenderer {
         double worldSizeAtClampDepth = 0.19200003147125244 * (double) height / (double) baseIconHeight;
         double fovMultiplier = 2.0 * Math.tan(Math.toRadians(fov / 2.0));
         return worldSizeAtClampDepth / fovMultiplier;
-    }
-
-    public static void drawNormalText(MatrixStack matrices, String name, float x, float y, int color, boolean shadow, VertexConsumerProvider.Immediate vertexConsumerProvider) {
-        MinecraftClient.getInstance().textRenderer.draw(name, x, y, color, shadow, matrices.peek().getPositionMatrix(), vertexConsumerProvider, TextRenderer.TextLayerType.NORMAL, 0, 15728880);
     }
 }

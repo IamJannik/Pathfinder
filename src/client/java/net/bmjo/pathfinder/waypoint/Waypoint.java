@@ -65,7 +65,7 @@ public class Waypoint {
     }
 
     public boolean tryRemove() {
-        return System.currentTimeMillis() - this.created >= 10 * 60 * 1000 || (this.farAway && isClientInRange(this.pos, 3)); // 10 min
+        return System.currentTimeMillis() - this.created >= 10 * 60 * 1000 || this.farAway && isClientInRange(this.pos, 3);
     }
 
     private static boolean isClientInRange(BlockPos pos, int distance) {

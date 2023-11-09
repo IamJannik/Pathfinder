@@ -16,7 +16,9 @@ public class MultiKeyBinding extends KeyBinding {
     private static final Map<InputUtil.Key, Set<MultiKeyBinding>> KEY_TO_BINDINGS = new HashMap<>();
     private final Collection<InputUtil.Key> defaultKeys;
     private Collection<InputUtil.Key> boundKeys;
-    int timesPressed;
+    private int timesPressed;
+    private final boolean repetitive;
+    private boolean alreadyPressed;
 
     public static Set<MultiKeyBinding> getMultiKeyBinding(InputUtil.Key key) {
         return KEY_TO_BINDINGS.containsKey(key) ? KEY_TO_BINDINGS.get(key) : new HashSet<>();
@@ -38,10 +40,11 @@ public class MultiKeyBinding extends KeyBinding {
             multiKeyBinding.safeKeyBindings();
     }
 
-    public MultiKeyBinding(String translationKey, String category, InputUtil.Key... keys) {
+    public MultiKeyBinding(String translationKey, String category, boolean repetitive, InputUtil.Key... keys) {
         super(translationKey, GLFW.GLFW_KEY_UNKNOWN, category);
-        boundKeys = Sets.newHashSet(keys);
-        defaultKeys = boundKeys;
+        this.repetitive = repetitive;
+        this.boundKeys = Sets.newHashSet(keys);
+        this.defaultKeys = this.boundKeys;
 
         KEY_BINDINGS.add(this);
         safeKeyBindings();
@@ -60,7 +63,7 @@ public class MultiKeyBinding extends KeyBinding {
         }
     }
 
-    private void safeKeyBindings() {
+    public void safeKeyBindings() {
         for (InputUtil.Key key : this.boundKeys)
             KEY_TO_BINDINGS.computeIfAbsent(key, k -> Sets.newHashSet(this)).add(this);
     }
@@ -76,7 +79,11 @@ public class MultiKeyBinding extends KeyBinding {
     }
 
     public void onPressed() {
-        ++this.timesPressed;
+        if (this.repetitive || !this.alreadyPressed)
+            ++this.timesPressed;
+        if (!this.repetitive)
+            this.alreadyPressed = true;
+
     }
 
     public boolean allPressed() {
@@ -89,13 +96,20 @@ public class MultiKeyBinding extends KeyBinding {
         return true;
     }
 
-    void reset() {
+    public void setPressed(boolean pressed) {
+        if (!pressed)
+            this.alreadyPressed = false;
+        super.setPressed(pressed);
+
+    }
+
+    public void reset() {
         this.timesPressed = 0;
         this.setPressed(false);
     }
 
     @Override
-    public boolean matchesKey(int keyCode, int scanCode) { //TODO
+    public boolean matchesKey(int keyCode, int scanCode) {
         if (keyCode == InputUtil.UNKNOWN_KEY.getCode()) {
             return this.boundKeys.stream().anyMatch(key -> key.getCategory() == InputUtil.Type.SCANCODE && key.getCode() == scanCode);
         } else {
@@ -143,25 +157,14 @@ public class MultiKeyBinding extends KeyBinding {
             InputUtil.Key key = itr.next();
             text.append(key.getTranslationKey());
             if (itr.hasNext()) {
-                text.append(" + ");
+                text.append("-");
             }
         }
         return text.toString();
-    }
-
-    public void disableOtherBindings() {
-        for (InputUtil.Key key : this.boundKeys)
-            KeyBinding.setKeyPressed(key, false);
-    }
-
-    public boolean areSubsets(MultiKeyBinding otherKeyBinding) {
-        return this.boundKeys.containsAll(otherKeyBinding.boundKeys) || otherKeyBinding.boundKeys.containsAll(this.boundKeys);
     }
 
     @Override
     public boolean equals(KeyBinding other) {
         return !boundKeys.isEmpty() ? other instanceof MultiKeyBinding multiKeyBinding && this.boundKeys.equals(multiKeyBinding.boundKeys) : super.equals(other);
     }
-
-
 }

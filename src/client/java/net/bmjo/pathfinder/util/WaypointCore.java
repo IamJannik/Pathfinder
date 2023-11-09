@@ -2,8 +2,7 @@ package net.bmjo.pathfinder.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.VertexSorter;
-import net.bmjo.pathfinder.waypoint.render.PathfinderShaders;
-import net.bmjo.pathfinder.waypoint.render.WaypointRenderer;
+import net.bmjo.pathfinder.waypoint.WaypointRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
@@ -32,7 +31,6 @@ public class WaypointCore {
     }
 
     public static void onRenderStart() {
-        PathfinderShaders.ensureShaders();
         Window mainwindow = MinecraftClient.getInstance().getWindow();
         Matrix4f projectionMatrixBU = RenderSystem.getProjectionMatrix();
         VertexSorter vertexSortingBU = RenderSystem.getVertexSorting();

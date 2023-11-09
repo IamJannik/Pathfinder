@@ -28,6 +28,7 @@ public class ClientEvents {
         keyBinding = KeyBindingHelper.registerKeyBinding(new MultiKeyBinding(
                 "key.pathfinder.waypoint",
                 "category.pathfinder",
+                false,
                 InputUtil.Type.KEYSYM.createFromCode(GLFW.GLFW_KEY_LEFT_SHIFT),
                 InputUtil.Type.MOUSE.createFromCode(GLFW.GLFW_MOUSE_BUTTON_MIDDLE)
         ));

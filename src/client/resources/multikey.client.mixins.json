@@ -3,11 +3,8 @@
   "package": "net.bmjo.multikey.mixin.client",
   "compatibilityLevel": "JAVA_17",
   "client": [
-    "MixinClient",
-    "MixinKeybindingScreen",
-    "MixinKeyboard",
-    "MixinKeyButton",
-    "MixinMouse"
+    "MixinKeyBinding",
+    "MixinKeyButton"
   ],
   "injectors": {
     "defaultRequire": 1
