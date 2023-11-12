@@ -283,9 +283,9 @@ public final class WaypointRenderer {
     private void drawPlayerHead(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
 
-        int iconScale = 4;
-        double nameScale = 2;
-        double distanceScale = 2;
+        int iconScale = 2;
+        double nameScale = 1;
+        double distanceScale = 1;
 
         int halfIconPixel = iconScale / 2;
         matrixStackOverlay.translate((float) halfIconPixel, 0.0F, 0.0F);
