@@ -56,7 +56,7 @@ public class RegExEr {
                 PathfinderClient.LOGGER.info("Pathfinder Chat Message detected but was wrong Pattern.");
                 return false;
             }
-        } else if (message.equals("Forget about my meeting point.")) {
+        } else if (message.contains("Forget about my meeting point.")) {
             WaypointHandler.tryRemoveWaypoint(sender);
             return true;
         }

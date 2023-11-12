@@ -25,8 +25,9 @@ public class MixinMessageHandler {
     @Inject(method = "processChatMessageInternal", at = @At(value = "HEAD"), cancellable = true)
     public void isPathfinderMessage(MessageType.Parameters params, SignedMessage message, Text decorated, GameProfile sender, boolean onlyShowSecureChat, Instant receptionTimestamp, CallbackInfoReturnable<Boolean> cir) {
         String msg = message.getContent().getString();
-        if (msg.contains("Lets meet at:") || msg.equals("Forget about my meeting point."))
-            if (RegExEr.waypointFromMessage(sender.getId(), msg))
-                cir.setReturnValue(true);
+        if (msg.contains("Lets meet at:") || msg.contains("Forget about my meeting point.")) {
+            RegExEr.waypointFromMessage(sender.getId(), msg);
+            cir.setReturnValue(true);
+        }
     }
 }
