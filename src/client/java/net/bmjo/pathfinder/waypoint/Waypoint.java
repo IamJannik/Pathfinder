@@ -94,13 +94,11 @@ public class Waypoint {
 
         assert mc.world != null;
         int wX = blockPos.getX();
-        int wY = blockPos.getY();
         int wZ = blockPos.getZ();
 
         Camera camera = mc.gameRenderer.getCamera();
         Vec3d cameraPos = camera.getPos();
         double offX = (double) wX - cameraPos.getX() + 0.5;
-        double offY = (double) wY - cameraPos.getY() + 1.0;
         double offZ = (double) wZ - cameraPos.getZ() + 0.5;
 
         float Z = (float) (offZ == 0.0D ? 0.001F : offZ);

@@ -62,15 +62,13 @@ public class ServerNetworking {
                 }
             });
         });
-        ServerPlayNetworking.registerGlobalReceiver(REMOVE_TEAM_WAYPOINT, (server, player, networkHandler, buf, sender) -> {
-            server.execute(() -> {
-                for (ServerPlayerEntity serverPlayer : getTeamPlayer(server, player)) {
-                    PacketByteBuf buffer = PacketByteBufs.create();
-                    buffer.writeUuid(player.getUuid());
-                    ServerPlayNetworking.send(serverPlayer, REMOVE_WAYPOINT, buffer);
-                }
-            });
-        });
+        ServerPlayNetworking.registerGlobalReceiver(REMOVE_TEAM_WAYPOINT, (server, player, networkHandler, buf, sender) -> server.execute(() -> {
+            for (ServerPlayerEntity serverPlayer : getTeamPlayer(server, player)) {
+                PacketByteBuf buffer = PacketByteBufs.create();
+                buffer.writeUuid(player.getUuid());
+                ServerPlayNetworking.send(serverPlayer, REMOVE_WAYPOINT, buffer);
+            }
+        }));
         ServerPlayNetworking.registerGlobalReceiver(IS_LOADED, (server, player, networkHandler, buf, sender) -> server.execute(() -> ServerPlayNetworking.send(player, IS_LOADED, PacketByteBufs.create())));
     }
 
