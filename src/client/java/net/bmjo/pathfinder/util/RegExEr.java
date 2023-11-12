@@ -28,15 +28,14 @@ public class RegExEr {
      * Extracts the sender UUID from a chat message and attempts to add a waypoint.
      *
      * @param message The chat message to analyze.
-     * @return True if a waypoint is successfully added, false otherwise.
      */
-    public static boolean waypointFromMessage(String message) {
+    public static void waypointFromMessage(String message) {
         UUID sender = senderFromMessage(message);
         if (sender == null) {
             PathfinderClient.LOGGER.info("Pathfinder Chat Message detected but couldn't find Sender.");
-            return false;
+            return;
         }
-        return waypointFromMessage(sender, message);
+        waypointFromMessage(sender, message);
     }
 
     /**
@@ -44,23 +43,18 @@ public class RegExEr {
      *
      * @param sender  The UUID of the sender.
      * @param message The chat message to analyze.
-     * @return True if a waypoint is successfully added, false otherwise.
      */
-    public static boolean waypointFromMessage(UUID sender, String message) {
+    public static void waypointFromMessage(UUID sender, String message) {
         if (message.contains("Lets meet at:")) {
             try {
                 GlobalPos globalPos = posFromMessage(message);
                 WaypointHandler.tryAddWaypoint(sender, globalPos);
-                return true;
             } catch (InvalidIdentifierException | NumberFormatException e) {
                 PathfinderClient.LOGGER.info("Pathfinder Chat Message detected but was wrong Pattern.");
-                return false;
             }
         } else if (message.contains("Forget about my meeting point.")) {
             WaypointHandler.tryRemoveWaypoint(sender);
-            return true;
         }
-        return false;
     }
 
     /**
