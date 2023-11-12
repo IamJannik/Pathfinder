@@ -12,6 +12,9 @@ import net.minecraft.world.World;
 
 import java.util.UUID;
 
+/**
+ * Client Networking of Pathfinder.
+ */
 public class ClientNetworking {
     public static final Identifier CREATE_WAYPOINT = PathfinderClient.identifier("create_waypoint");
     public static final Identifier CREATE_GANG_WAYPOINT = PathfinderClient.identifier("create_gang_waypoint");

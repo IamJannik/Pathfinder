@@ -26,6 +26,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Collection;
 import java.util.UUID;
 
+/**
+ * Mixin class for adding additional functionality to the Social Interactions screen.
+ * Provides a gang tab, toggle button, and rendering adjustments for the Pathfinder Gang.
+ *
+ * @author BMJO
+ * @version 1.6
+ */
 @Mixin(SocialInteractionsScreen.class)
 public abstract class MixinSocialScreen extends Screen {
     @Shadow SocialInteractionsPlayerListWidget playerList;

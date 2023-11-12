@@ -26,6 +26,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+/**
+ * Mixin class for adding a gang button to the Social Interactions player list entries.
+ * Provides functionality to manage the Pathfinder Gang and adds the visual representation.
+ *
+ * @author BMJO
+ * @version 1.6
+ */
 @Mixin(SocialInteractionsPlayerListEntry.class)
 public abstract class MixinSocialPlayerListEntry {
     @Unique

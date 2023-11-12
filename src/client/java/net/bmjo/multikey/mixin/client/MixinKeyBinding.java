@@ -8,6 +8,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Mixin class to inject the {@link MultiKeyBinding} methods into the minecraft ones.
+ */
 @Mixin(KeyBinding.class)
 public abstract class MixinKeyBinding {
     @Inject(method = "onKeyPressed", at = @At(value = "HEAD"), cancellable = true)

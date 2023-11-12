@@ -25,19 +25,41 @@ import net.minecraft.util.math.GlobalPos;
 
 import java.util.*;
 
+/**
+ * Manages the waypoints of the players in Minecraft, including creation, deletion, and filtering based on various conditions.
+ *
+ * @author BMJO
+ * @version 1.8
+ */
 public class WaypointHandler {
+    /**
+     * A map that associates player UUIDs with their respective waypoints.
+     */
     public static final Map<UUID, Waypoint> WAYPOINTS = new HashMap<>();
     private static int messageCooldown;
     private static final String createMessage, deleteMessage;
+
     //CREATE
 
+    /**
+     * Adds a waypoint for the specified owner at the given global position to {@link WaypointHandler#WAYPOINTS}.
+     *
+     * @param owner     The UUID of the owner.
+     * @param globalPos The global position of the waypoint.
+     */
     private static void addWaypoint(UUID owner, GlobalPos globalPos) {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer != null)
             clientPlayer.playSound(PathfinderSounds.WAYPOINT_CREATE, SoundCategory.NEUTRAL, 1.0F, 1.0F);
-        WAYPOINTS.put(owner, Waypoint.create(globalPos, owner));
+        WAYPOINTS.put(owner, Waypoint.create(owner, globalPos));
     }
 
+    /**
+     * Attempts to create and add a waypoint for the specified owner at the given global position.
+     *
+     * @param owner    The UUID of the owner.
+     * @param blockPos The global position of the waypoint.
+     */
     public static void tryAddWaypoint(UUID owner, GlobalPos blockPos) {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer != null && clientPlayer.getUuid().equals(owner))
@@ -51,6 +73,9 @@ public class WaypointHandler {
         }
     }
 
+    /**
+     * Creates a waypoint based on the client player's raycast hit result.
+     */
     public static void createWaypoint() {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
         HitResult hitResult = raycastWaypoint();
@@ -71,6 +96,11 @@ public class WaypointHandler {
         }
     }
 
+    /**
+     * Sends a creation message for the waypoint of the client.
+     *
+     * @param blockPos The block position of the waypoint.
+     */
     private static void sendCreate(BlockPos blockPos) {
         ClientPlayerEntity owner = PathfinderClient.getPlayer();
         if (owner == null)
@@ -107,16 +137,29 @@ public class WaypointHandler {
 
     // DELETE
 
+    /**
+     * Attempts to remove a waypoint for the specified owner.
+     *
+     * @param owner The UUID of the owner.
+     */
     public static void tryRemoveWaypoint(UUID owner) {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer != null && owner != clientPlayer.getUuid())
             removeWaypoint(owner);
     }
 
+    /**
+     * Removes the waypoint for the player.
+     *
+     * @param owner The UUID of the owner.
+     */
     private static void removeWaypoint(UUID owner) {
         WAYPOINTS.remove(owner);
     }
 
+    /**
+     * Deletes the waypoint for the client player.
+     */
     public static void deleteWaypoint() {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
         if (player != null) {
@@ -126,6 +169,9 @@ public class WaypointHandler {
         }
     }
 
+    /**
+     * Sends a delete message for the client player's waypoint.
+     */
     private static void sendDelete() {
         ClientPlayerEntity owner = PathfinderClient.getPlayer();
         if (owner == null)
@@ -155,6 +201,9 @@ public class WaypointHandler {
 
     // STUFF
 
+    /**
+     * Filters waypoints to only include those belonging to gang members.
+     */
     public static void onlyGang() {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer == null)
@@ -164,6 +213,9 @@ public class WaypointHandler {
                 removeWaypoint(uuid);
     }
 
+    /**
+     * Filters waypoints to only include those belonging to minecraft team members.
+     */
     public static void onlyTeam() {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer == null)
@@ -173,12 +225,20 @@ public class WaypointHandler {
                 removeWaypoint(uuid);
     }
 
+    /**
+     * Performs a raycast to determine the hit result for waypoints.
+     *
+     * @return The hit result.
+     */
     private static HitResult raycastWaypoint() {
         Entity entity = MinecraftClient.getInstance().getCameraEntity();
         assert entity != null;
         return entity.raycast(MinecraftClient.getInstance().options.getViewDistance().getValue() * 16, 1.0F, false);
     }
 
+    /**
+     * Updates the waypoint handler, removing waypoints that exceed the time limit.
+     */
     public static void update() {
         if (messageCooldown > 0)
             --messageCooldown;
@@ -193,6 +253,11 @@ public class WaypointHandler {
         }
     }
 
+    /**
+     * Checks if a message can be sent based on a cooldown, to not trigger the Minecraft spam detection.
+     *
+     * @return True if a message can be sent, false otherwise.
+     */
     private static boolean canSend() {
         messageCooldown += 20;
         return messageCooldown < 100;

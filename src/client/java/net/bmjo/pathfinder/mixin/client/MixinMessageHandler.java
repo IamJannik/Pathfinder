@@ -13,10 +13,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.time.Instant;
 
+/**
+ * Mixin class for modifying the behavior of the MessageHandler.
+ * Creates a waypoint if a message matches the "StringEntanglement" pattern of Pathfinder and cancels the ChatMessage internal process.
+ *
+ * @author BMJO
+ * @version 1.0
+ */
 @Mixin(MessageHandler.class)
 public class MixinMessageHandler {
     @Inject(method = "processChatMessageInternal", at = @At(value = "HEAD"), cancellable = true)
-    public void isPFMessage(MessageType.Parameters params, SignedMessage message, Text decorated, GameProfile sender, boolean onlyShowSecureChat, Instant receptionTimestamp, CallbackInfoReturnable<Boolean> cir) {
+    public void isPathfinderMessage(MessageType.Parameters params, SignedMessage message, Text decorated, GameProfile sender, boolean onlyShowSecureChat, Instant receptionTimestamp, CallbackInfoReturnable<Boolean> cir) {
         String msg = message.getContent().getString();
         if (msg.contains("Lets meet at:") || msg.equals("Forget about my meeting point."))
             if (RegExEr.waypointFromMessage(sender.getId(), msg))

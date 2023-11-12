@@ -12,6 +12,10 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The main entry point for the Pathfinder mod on the client side.
+ * Initializes the client and registers various components such as configuration, events, networking, and sounds.
+ */
 public class PathfinderClient implements ClientModInitializer {
 	public static final String MOD_ID = "pathfinder";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);

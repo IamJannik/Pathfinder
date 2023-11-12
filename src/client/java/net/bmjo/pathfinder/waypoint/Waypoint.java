@@ -17,78 +17,156 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+/**
+ * Represents a waypoint in Minecraft, storing information such as position, name, skin, creation time, and distance.
+ *
+ * @author BMJO
+ * @version 1.2
+ */
 public class Waypoint {
     private final GlobalPos pos;
-    private final String name;
+    private final String owner;
     private final Supplier<SkinTextures> skin;
     private final long created;
     private final boolean farAway;
 
-    private Waypoint(GlobalPos pos, String name, Supplier<SkinTextures> skin, long created) {
+    /**
+     * Constructs a Waypoint object.
+     *
+     * @param pos     The global position of the waypoint.
+     * @param owner   The name of the owner associated with the waypoint.
+     * @param skin    A supplier for the skin textures of the owner associated with the waypoint.
+     * @param created The timestamp when the waypoint was created.
+     */
+    private Waypoint(GlobalPos pos, String owner, Supplier<SkinTextures> skin, long created) {
         this.pos = pos;
-        this.name = name;
+        this.owner = owner;
         this.skin = skin;
         this.created = created;
         this.farAway = !this.isClientInRange(10);
     }
 
-    public static Waypoint create(GlobalPos pos, UUID owner) {
-        String name = "";
+    /**
+     * Creates a new waypoint based on the global position and owner UUID.
+     *
+     * @param pos   The global position of the waypoint.
+     * @param owner The UUID of the owner associated with the waypoint.
+     * @return A new Waypoint instance.
+     */
+    public static Waypoint create(UUID owner, GlobalPos pos) {
+        String ownerName = "";
         Supplier<SkinTextures> skin = () -> null;
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
         if (clientPlayer != null) {
             PlayerListEntry playerListEntry = clientPlayer.networkHandler.getPlayerListEntry(owner);
             if (playerListEntry != null) {
-                name = playerListEntry.getProfile().getName();
+                ownerName = playerListEntry.getProfile().getName();
                 skin = playerListEntry::getSkinTextures;
             }
         }
-        return new Waypoint(pos, name, skin, System.currentTimeMillis());
-        //minecraft:dimension / minecraft:overworld
+        return new Waypoint(pos, ownerName, skin, System.currentTimeMillis());
     }
 
+    /**
+     * Gets the block position of the waypoint.
+     *
+     * @return The block position.
+     */
     public BlockPos pos() {
         return this.pos.getPos();
     }
 
+    /**
+     * Gets the X-coordinate of the waypoint's block position.
+     *
+     * @return The X-coordinate.
+     */
+    public int posX() {
+        return this.pos().getX();
+    }
+
+    /**
+     * Gets the Y-coordinate of the waypoint's block position.
+     *
+     * @return The Y-coordinate.
+     */
+    public int posY() {
+        return this.pos().getY();
+    }
+
+    /**
+     * Gets the Z-coordinate of the waypoint's block position.
+     *
+     * @return The Z-coordinate.
+     */
+    public int posZ() {
+        return this.pos().getZ();
+    }
+
+    /**
+     * Gets the dimension key of the waypoint.
+     *
+     * @return The dimension key.
+     */
     public RegistryKey<World> dimension() {
         return this.pos.getDimension();
     }
 
-    public String name() {
-        return this.name;
+    /**
+     * Gets the owners name of the owner associated with the waypoint.
+     *
+     * @return The owners name.
+     */
+    public String owner() {
+        return this.owner;
     }
 
+    /**
+     * Gets the skin textures associated with the waypoint.
+     *
+     * @return The skin textures, or null if not available.
+     */
     @Nullable
     public SkinTextures skin() {
         return this.skin.get();
     }
 
-    public int posX() {
-        return this.pos().getX();
-    }
-
-    public int posY() {
-        return this.pos().getY();
-    }
-
-    public int posZ() {
-        return this.pos().getZ();
-    }
-
+    /**
+     * Attempts to remove the waypoint based on time and distance conditions.
+     *
+     * @return True if the waypoint should be removed, false otherwise.
+     */
     public boolean tryRemove() {
         return System.currentTimeMillis() - this.created >= 10 * 60 * 1000 || this.farAway && this.isClientInRange(3);
     }
 
+    /**
+     * Checks if the client is within a certain distance from the waypoint.
+     *
+     * @param distance The distance threshold.
+     * @return True if the client is within the specified distance, false otherwise.
+     */
     private boolean isClientInRange(int distance) {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
         return player != null && player.getBlockPos().isWithinDistance(this.pos.getPos(), distance);
     }
 
+    /**
+     * Calculates the angle between the player's camera and the waypoint with the block position of the waypoint.
+     * {@link Waypoint#getAngelToWaypoint(BlockPos)}
+     *
+     * @return The angle to the waypoint.
+     */
     public float getAngelToWaypoint() {
         return getAngelToWaypoint(this.pos());
     }
 
+    /**
+     * Calculates the angle between a given block position and the client player's camera.
+     *
+     * @param blockPos The block position to calculate the angle to.
+     * @return The angle to the specified block position.
+     */
     public static float getAngelToWaypoint(BlockPos blockPos) {
         MinecraftClient mc = MinecraftClient.getInstance();
 

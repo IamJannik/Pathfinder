@@ -24,7 +24,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Manages the rendering of waypoints in the Minecraft world, including player heads, labels, and distances.
+ *
+ * @author BMJO
+ * @version 1.7
+ */
 public final class WaypointRenderer {
+    /**
+     * The singleton instance of the WaypointRenderer.
+     */
     private static final WaypointRenderer INSTANCE = new WaypointRenderer();
     private final MinecraftClient MC;
     @Nullable
@@ -44,16 +53,20 @@ public final class WaypointRenderer {
         matrixStackOverlay = new DrawContext(MC, new BufferBuilderStorage().getEntityVertexConsumers());
     }
 
+    /**
+     * Gets the singleton instance of the WaypointRenderer.
+     *
+     * @return The singleton instance of the WaypointRenderer.
+     */
     public static WaypointRenderer getInstance() {
         return INSTANCE;
     }
 
     /**
-     * Render method for waypoints in the world.
+     * Renders waypoints in the world.
      *
      * @param waypointsProjection The Matrix4f instance representing the projection of the waypoints.
      * @param worldModelView      The Matrix4f instance for the representation of the world model view.
-     * @author BMJO
      */
     public void render(Matrix4f waypointsProjection, Matrix4f worldModelView) {
         if (MC.player == null) {
@@ -101,6 +114,18 @@ public final class WaypointRenderer {
         matrixStack.pop();
     }
 
+    /**
+     * Renders the waypoints based on the provided parameters.
+     *
+     * @param iter                   Iterator over the waypoints to render.
+     * @param cameraPos              The position of the camera.
+     * @param entity                 The camera entity.
+     * @param entityPos              The position of the camera entity.
+     * @param lookVector             The look vector of the camera.
+     * @param clampDepth             The depth at which waypoints should be clamped.
+     * @param vertexConsumerProvider The vertex consumer provider for rendering.
+     * @param waypointsProjection    The Matrix4f instance representing the projection of the waypoints.
+     */
     private void renderWaypoints(Iterator<Waypoint> iter, Vec3d cameraPos, Entity entity, Vec3d entityPos, Vector3f lookVector, double clampDepth, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
         matrixStackOverlay.translate(0.0F, 0.0F, -2980.0F);
@@ -127,6 +152,19 @@ public final class WaypointRenderer {
         RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
     }
 
+    /**
+     * Renders a single waypoint based on the provided parameters.
+     *
+     * @param waypoint              The waypoint to render.
+     * @param lookVector            The look vector of the camera.
+     * @param depthClamp            The depth at which waypoints should be clamped.
+     * @param cameraPos             The position of the camera.
+     * @param entityPos             The position of the camera entity.
+     * @param vertexConsumerProvider The vertex consumer provider for rendering.
+     * @param waypointsProjection  The Matrix4f instance representing the projection of the waypoints.
+     * @param isTheMain             Indicates if the waypoint is the main one which he player is looking at.
+     * @param showAllInfo           Indicates if all information should be shown.
+     */
     private void renderWaypoint(Waypoint waypoint, Vector3f lookVector, double depthClamp, Vec3d cameraPos, Vec3d entityPos, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, boolean isTheMain, boolean showAllInfo) {
         MatrixStack matrixStack = this.matrixStack.getMatrices();
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
@@ -141,7 +179,7 @@ public final class WaypointRenderer {
         double distance2D = Math.sqrt(offX * offX + offZ * offZ);
 
         if (distance2D >= 0.0D) {
-            String name = waypoint.name();
+            String name = waypoint.owner();
             String distanceText = "";
 
             double depth = offX * (double) lookVector.x() + offY * (double) lookVector.y() + offZ * (double) lookVector.z();
@@ -186,6 +224,16 @@ public final class WaypointRenderer {
         }
     }
 
+    /**
+     * Determines whether the distance label should be shown for a waypoint.
+     *
+     * @param waypoint   The waypoint being considered.
+     * @param isTheMain  Indicates if the waypoint is the main one which he player is looking at.
+     * @param showAllInfo Indicates if all information should be shown.
+     * @param depth      The depth of the waypoint.
+     * @param distance   The distance of the waypoint.
+     * @return True if the distance label should be shown, false otherwise.
+     */
     private boolean shouldShowDistance(Waypoint waypoint, boolean isTheMain, boolean showAllInfo, double depth, double distance) {
         if (isTheMain) {
             return true;
@@ -199,6 +247,14 @@ public final class WaypointRenderer {
         }
     }
 
+    /**
+     * Sets up the overlay rendering for a waypoint including player head, name, and distance.
+     *
+     * @param waypoint              The waypoint to draw.
+     * @param name                  The name of the waypoint owner.
+     * @param distance              The distance text to display.
+     * @param vertexConsumerProvider The vertex consumer provider for rendering.
+     */
     private void drawAsOverlay(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, double depthClamp, double depth) {
         MatrixStack matrixStack = this.matrixStack.getMatrices();
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
@@ -216,6 +272,14 @@ public final class WaypointRenderer {
         this.drawPlayerHead(waypoint, name, distance, vertexConsumerProvider);
     }
 
+    /**
+     * Draws the player head for a waypoint including optional the name and the distance.
+     *
+     * @param waypoint              The waypoint to draw.
+     * @param name                  The name of the waypoint owner.
+     * @param distance              The distance text to display.
+     * @param vertexConsumerProvider The vertex consumer provider for rendering.
+     */
     private void drawPlayerHead(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
 
@@ -248,6 +312,13 @@ public final class WaypointRenderer {
         }
     }
 
+    /**
+     * Renders the label for a waypoint.
+     *
+     * @param label                 The text to render.
+     * @param labelScale            The scale of the label.
+     * @param vertexConsumerProvider The vertex consumer provider for rendering.
+     */
     private void renderWaypointLabel(String label, double labelScale, VertexConsumerProvider.Immediate vertexConsumerProvider) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
         assert this.textRenderer != null;
@@ -271,6 +342,13 @@ public final class WaypointRenderer {
         RenderSystem.enableBlend();
     }
 
+    /**
+     * Calculates the clamp depth for waypoints based on the field of view and window height.
+     *
+     * @param fov    The field of view.
+     * @param height The height of the window.
+     * @return The calculated clamp depth.
+     */
     private static double getWaypointsClampDepth(double fov, int height) {
         int baseIconHeight = 8;
         double worldSizeAtClampDepth = 0.19200003147125244 * (double) height / (double) baseIconHeight;

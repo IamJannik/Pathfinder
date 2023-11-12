@@ -7,17 +7,37 @@ import org.joml.Vector3f;
 
 import java.util.function.Predicate;
 
+/**
+ * A filter for waypoints based on the specified parameters, including look vector, camera position, and dimension.
+ * So the {@link WaypointRenderer} knows which one to render.
+ *
+ * @author BMJO
+ * @version 1.0
+ */
 public class WaypointFilter implements Predicate<Waypoint> {
     private Vector3f lookVector;
     private Vec3d cameraPos;
     private RegistryKey<World> dimension;
 
+    /**
+     * Sets the parameters for the waypoint filter.
+     *
+     * @param lookVector The vector representing the player's look direction.
+     * @param cameraPos  The position of the client player's camera.
+     * @param dimension  The dimension key to filter waypoints by.
+     */
     public void setParams(Vector3f lookVector, Vec3d cameraPos, RegistryKey<World> dimension) {
         this.lookVector = lookVector;
         this.cameraPos = cameraPos;
         this.dimension = dimension;
     }
 
+    /**
+     * Tests whether a waypoint satisfies the filtering conditions and should be rendered.
+     *
+     * @param waypoint The waypoint to be tested.
+     * @return True if the waypoint passes the filter, false otherwise.
+     */
     @Override
     public boolean test(Waypoint waypoint) {
         if (!waypoint.dimension().equals(this.dimension))

@@ -11,8 +11,11 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
+/**
+ * Client-side events of Pathfinder.
+ */
 public class ClientEvents {
-    public static final KeyBinding waypointKey;
+    private static final KeyBinding waypointKey;
 
     public static void registerEvents() {
         ServerPlayConnectionEvents.JOIN.register((client, sender, server) -> sender.sendPacket(ClientNetworking.IS_LOADED, PacketByteBufs.create()));

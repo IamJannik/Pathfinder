@@ -17,7 +17,19 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+/**
+ * Handles the unique distribution system from Pathfinder "StringEntanglement"
+ *
+ * @author BMJO
+ * @version 2.0
+ */
 public class RegExEr {
+    /**
+     * Extracts the sender UUID from a chat message and attempts to add a waypoint.
+     *
+     * @param message The chat message to analyze.
+     * @return True if a waypoint is successfully added, false otherwise.
+     */
     public static boolean waypointFromMessage(String message) {
         UUID sender = senderFromMessage(message);
         if (sender == null) {
@@ -27,6 +39,13 @@ public class RegExEr {
         return waypointFromMessage(sender, message);
     }
 
+    /**
+     * Parses a chat message and adds a waypoint if it contains the appropriate pattern.
+     *
+     * @param sender  The UUID of the sender.
+     * @param message The chat message to analyze.
+     * @return True if a waypoint is successfully added, false otherwise.
+     */
     public static boolean waypointFromMessage(UUID sender, String message) {
         if (message.contains("Lets meet at:")) {
             try {
@@ -44,6 +63,12 @@ public class RegExEr {
         return false;
     }
 
+    /**
+     * Extracts the UUID of the sender from the chat message.
+     *
+     * @param message The chat message to analyze.
+     * @return The UUID of the sender, or null if not found or it's the own message.
+     */
     @Nullable
     private static UUID senderFromMessage(String message) {
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
@@ -65,6 +90,14 @@ public class RegExEr {
         return null;
     }
 
+    /**
+     * Extracts the {@link GlobalPos} from the chat message.
+     *
+     * @param message The chat message to analyze.
+     * @return The GlobalPos extracted from the chat message.
+     * @throws PatternSyntaxException If the chat message has the wrong pattern.
+     * @throws NumberFormatException  If there is an error parsing the coordinates.
+     */
     private static GlobalPos posFromMessage(String message) throws PatternSyntaxException, NumberFormatException {
         String[] splits = message.split(":|in the ");
         if (splits.length < 5)
@@ -87,6 +120,12 @@ public class RegExEr {
         return GlobalPos.create(world, pos);
     }
 
+    /**
+     * Capitalizes the first letter of a string.
+     *
+     * @param string The input string.
+     * @return The input string with the first letter capitalized.
+     */
     public static String upperCaseFirst(String string) {
         return Pattern.compile("^.").matcher(string).replaceFirst(m -> m.group().toUpperCase());
     }

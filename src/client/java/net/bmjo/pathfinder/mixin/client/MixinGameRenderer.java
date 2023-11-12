@@ -10,6 +10,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Mixin class for modifying the behavior of the Minecraft GameRenderer.
+ * Hooks into the rendering process to handle the waypoint Rendering.
+ */
 @Mixin({GameRenderer.class})
 public class MixinGameRenderer {
     @Inject(method = "loadProjectionMatrix", at = @At("HEAD"))

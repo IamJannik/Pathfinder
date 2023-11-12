@@ -11,6 +11,13 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
 
+/**
+ * A custom key binding that supports multiple keys and mouse buttons.
+ * Tracks the pressed state and provides utility methods for handling input.
+ *
+ * @author BMJO
+ * @version 1.2
+ */
 @Unfinished
 public class MultiKeyBinding extends KeyBinding {
     private static final Set<MultiKeyBinding> KEY_BINDINGS = new HashSet<>();
@@ -20,26 +27,49 @@ public class MultiKeyBinding extends KeyBinding {
     private int timesPressed;
     private final boolean sneak;
 
+    /**
+     * Gets a set of all {@code MultiKeyBinding} instances bound to the specified key.
+     *
+     * @param key The key to look up.
+     * @return A set of {@code MultiKeyBinding} instances bound to the specified key, or an empty set if none.
+     */
     public static Set<MultiKeyBinding> getMultiKeyBinding(InputUtil.Key key) {
         return KEY_TO_BINDINGS.containsKey(key) ? KEY_TO_BINDINGS.get(key) : new HashSet<>();
     }
 
+    /**
+     * Updates the pressed states of all registered {@code MultiKeyBinding} instances.
+     */
     public static void updatePressedStates() {
         for (MultiKeyBinding multiKeyBinding : KEY_BINDINGS)
             multiKeyBinding.setPressed(multiKeyBinding.allPressed());
     }
 
+    /**
+     * Unpresses all registered {@code MultiKeyBinding} instances.
+     */
     public static void unpressAll() {
         for (MultiKeyBinding multiKeyBinding : KEY_BINDINGS)
             multiKeyBinding.reset();
     }
 
+    /**
+     * Updates the key bindings mapping based on the current state of registered instances.
+     */
     public static void updateBindings() {
         KEY_TO_BINDINGS.clear();
         for (MultiKeyBinding multiKeyBinding : KEY_BINDINGS)
             multiKeyBinding.safeKeyBindings();
     }
 
+    /**
+     * Constructs a new {@code MultiKeyBinding} with the specified translation key, category, sneak status, and keys.
+     *
+     * @param translationKey The translation key for display purposes.
+     * @param category       The category to which this key binding belongs.
+     * @param sneak          Whether this key binding requires sneaking.
+     * @param keys           The keys associated with this binding.
+     */
     public MultiKeyBinding(String translationKey, String category, boolean sneak, InputUtil.Key... keys) {
         super(translationKey, GLFW.GLFW_KEY_UNKNOWN, category);
         this.sneak = sneak;
@@ -90,11 +120,10 @@ public class MultiKeyBinding extends KeyBinding {
 
     @Override
     public boolean matchesKey(int keyCode, int scanCode) {
-        if (keyCode == InputUtil.UNKNOWN_KEY.getCode()) {
+        if (keyCode == InputUtil.UNKNOWN_KEY.getCode())
             return this.boundKeys.stream().anyMatch(key -> key.getCategory() == InputUtil.Type.SCANCODE && key.getCode() == scanCode);
-        } else {
+        else
             return this.boundKeys.stream().anyMatch(key -> key.getCategory() == InputUtil.Type.KEYSYM && key.getCode() == keyCode);
-        }
     }
 
     @Override
@@ -120,9 +149,8 @@ public class MultiKeyBinding extends KeyBinding {
         while (itr.hasNext()) {
             InputUtil.Key key = itr.next();
             text.append(key.getLocalizedText().getString());
-            if (itr.hasNext()) {
+            if (itr.hasNext())
                 text.append(" + ");
-            }
         }
         return Text.literal(text.toString());
     }
@@ -136,9 +164,8 @@ public class MultiKeyBinding extends KeyBinding {
         while (itr.hasNext()) {
             InputUtil.Key key = itr.next();
             text.append(key.getTranslationKey());
-            if (itr.hasNext()) {
+            if (itr.hasNext())
                 text.append("-");
-            }
         }
         return text.toString();
     }

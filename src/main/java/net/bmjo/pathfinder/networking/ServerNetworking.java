@@ -13,6 +13,9 @@ import net.minecraft.util.math.BlockPos;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Server Networking of Pathfinder.
+ */
 public class ServerNetworking {
     public static final Identifier CREATE_WAYPOINT = Pathfinder.identifier("create_waypoint");
     public static final Identifier CREATE_GANG_WAYPOINT = Pathfinder.identifier("create_gang_waypoint");

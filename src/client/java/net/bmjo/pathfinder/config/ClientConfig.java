@@ -12,11 +12,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * Config for client-side settings, stored in a properties file.
+ *
+ * @author BMJO
+ * @version 1.0
+ */
 public class ClientConfig {
     private final HashMap<String, Boolean> config = new HashMap<>();
     private final File file;
     private boolean broken = false;
 
+    /**
+     * Constructs a new instance of the ClientConfig class.
+     *
+     * @param filename The name of the configuration file (excluding extension).
+     */
     public ClientConfig(String filename) {
         Path path = FabricLoader.getInstance().getConfigDir();
         this.file = path.resolve(filename + ".properties").toFile();
@@ -70,6 +81,13 @@ public class ClientConfig {
         }
     }
 
+    /**
+     * Retrieves the boolean value associated with the specified key or returns the default value if not found.
+     *
+     * @param key The key to look up in the configuration.
+     * @param def The default value to return if the key is not present.
+     * @return The boolean value associated with the key, or the default value if not found.
+     */
     public boolean getOrDefault(String key, boolean def) {
         if (!config.containsKey(key)) {
             this.set(key, def);
@@ -82,6 +100,12 @@ public class ClientConfig {
         return config.getOrDefault(key, def);
     }
 
+    /**
+     * Sets the boolean value associated with the specified key and saves the configuration.
+     *
+     * @param key The key to set in the configuration.
+     * @param val The boolean value to associate with the key.
+     */
     public void set(String key, boolean val) {
         config.put(key, val);
         try {

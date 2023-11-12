@@ -8,6 +8,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Mixin class for modifying the behavior of the Minecraft InGameHud.
+ * Hooks into the rendering process to initiate waypoint rendering.
+ */
 @Mixin(InGameHud.class)
 public class MixinInGameHud {
     @Inject(method = "render", at = @At("HEAD"))
