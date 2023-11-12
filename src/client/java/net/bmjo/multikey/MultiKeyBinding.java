@@ -5,6 +5,7 @@ import net.bmjo.multikey.annotation.Unfinished;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -15,10 +16,9 @@ public class MultiKeyBinding extends KeyBinding {
     private static final Set<MultiKeyBinding> KEY_BINDINGS = new HashSet<>();
     private static final Map<InputUtil.Key, Set<MultiKeyBinding>> KEY_TO_BINDINGS = new HashMap<>();
     private final Collection<InputUtil.Key> defaultKeys;
-    private Collection<InputUtil.Key> boundKeys;
+    private final Collection<InputUtil.Key> boundKeys;
     private int timesPressed;
-    private final boolean repetitive;
-    private boolean alreadyPressed;
+    private final boolean sneak;
 
     public static Set<MultiKeyBinding> getMultiKeyBinding(InputUtil.Key key) {
         return KEY_TO_BINDINGS.containsKey(key) ? KEY_TO_BINDINGS.get(key) : new HashSet<>();
@@ -40,27 +40,14 @@ public class MultiKeyBinding extends KeyBinding {
             multiKeyBinding.safeKeyBindings();
     }
 
-    public MultiKeyBinding(String translationKey, String category, boolean repetitive, InputUtil.Key... keys) {
+    public MultiKeyBinding(String translationKey, String category, boolean sneak, InputUtil.Key... keys) {
         super(translationKey, GLFW.GLFW_KEY_UNKNOWN, category);
-        this.repetitive = repetitive;
+        this.sneak = sneak;
         this.boundKeys = Sets.newHashSet(keys);
         this.defaultKeys = this.boundKeys;
 
         KEY_BINDINGS.add(this);
         safeKeyBindings();
-    }
-
-    public void setBoundKeys(Set<InputUtil.Key> boundKeys) {
-        if (boundKeys.isEmpty()) {
-            this.boundKeys.clear();
-            this.setBoundKey(InputUtil.UNKNOWN_KEY);
-        } else if (boundKeys.size() == 1) {
-            this.boundKeys.clear();
-            this.setBoundKey(boundKeys.iterator().next());
-        } else {
-            super.setBoundKey(InputUtil.UNKNOWN_KEY);
-            this.boundKeys = boundKeys;
-        }
     }
 
     public void safeKeyBindings() {
@@ -79,28 +66,21 @@ public class MultiKeyBinding extends KeyBinding {
     }
 
     public void onPressed() {
-        if (this.repetitive || !this.alreadyPressed)
-            ++this.timesPressed;
-        if (!this.repetitive)
-            this.alreadyPressed = true;
-
+        ++this.timesPressed;
     }
 
     public boolean allPressed() {
-        long window = MinecraftClient.getInstance().getWindow().getHandle();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        PlayerEntity player = mc.player;
+        long window = mc.getWindow().getHandle();
+        if (this.sneak && player != null && !player.isSneaking())
+            return false;
         for (InputUtil.Key key : this.boundKeys)
             if (key.getCategory() == InputUtil.Type.MOUSE && GLFW.glfwGetMouseButton(window, key.getCode()) != GLFW.GLFW_PRESS)
                 return false;
             else if (key.getCategory() != InputUtil.Type.MOUSE && !InputUtil.isKeyPressed(window, key.getCode()))
                 return false;
         return true;
-    }
-
-    public void setPressed(boolean pressed) {
-        if (!pressed)
-            this.alreadyPressed = false;
-        super.setPressed(pressed);
-
     }
 
     public void reset() {

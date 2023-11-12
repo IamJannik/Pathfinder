@@ -26,23 +26,27 @@ public class ServerNetworking {
         ServerPlayNetworking.registerGlobalReceiver(CREATE_GANG_WAYPOINT, (server, player, networkHandler, buf, sender) -> {
             UUID uuid = buf.readUuid();
             BlockPos blockPos = buf.readBlockPos();
+            String dimension = buf.readString();
             server.execute(() -> {
                 ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(uuid);
                 if (serverPlayer != null) {
                     PacketByteBuf buffer = PacketByteBufs.create();
                     buffer.writeUuid(player.getUuid());
                     buffer.writeBlockPos(blockPos);
+                    buffer.writeString(dimension);
                     ServerPlayNetworking.send(serverPlayer, CREATE_WAYPOINT, buffer);
                 }
             });
         });
         ServerPlayNetworking.registerGlobalReceiver(CREATE_TEAM_WAYPOINT, (server, player, networkHandler, buf, sender) -> {
             BlockPos blockPos = buf.readBlockPos();
+            String dimension = buf.readString();
             server.execute(() -> {
                 for (ServerPlayerEntity serverPlayer : getTeamPlayer(server, player)) {
                     PacketByteBuf buffer = PacketByteBufs.create();
                     buffer.writeUuid(player.getUuid());
                     buffer.writeBlockPos(blockPos);
+                    buffer.writeString(dimension);
                     ServerPlayNetworking.send(serverPlayer, CREATE_WAYPOINT, buffer);
                 }
             });

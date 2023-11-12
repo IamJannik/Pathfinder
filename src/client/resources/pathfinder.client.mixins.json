@@ -3,11 +3,12 @@
   "package": "net.bmjo.pathfinder.mixin.client",
   "compatibilityLevel": "JAVA_17",
   "client": [
-    "ChatMixin",
+    "MixinChatHud",
     "MixinGameRenderer",
     "MixinInGameHud",
-    "SocialPlayerListEntryMixin",
-    "SocialScreenMixin"
+    "MixinMessageHandler",
+    "MixinSocialPlayerListEntry",
+    "MixinSocialScreen"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -6,5 +6,6 @@
   "pathfinder.gang.remove": "Kick out of gang",
   "pathfinder.gang.use_gang": "Share with Gang",
   "pathfinder.gang.use_team": "Share with Team",
+  "pathfinder.gang.empty": "No Players in Gang",
   "subtitles.pathfinder.waypoint_create": "Created Waypoint"
 }

@@ -3,7 +3,7 @@
 	"id": "pathfinder",
 	"version": "${version}",
 	"name": "Pathfinder",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+  "description": "Share your Waypoint in real time with your friends, without any server support.",
 	"authors": [
 		"BMJO"
 	],
@@ -11,9 +11,9 @@
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
-	"license": "CC0-1.0",
+  "license": "GPLv3",
 	"icon": "assets/pathfinder/icon.png",
-	"environment": "*",
+  "environment": "client",
 	"entrypoints": {
 		"main": [
 			"net.bmjo.pathfinder.Pathfinder"

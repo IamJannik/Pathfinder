@@ -6,22 +6,25 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.SkinTextures;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
 public class Waypoint {
-    private final BlockPos pos;
+    private final GlobalPos pos;
     private final String name;
     private final Supplier<SkinTextures> skin;
     private final long created;
     private final boolean farAway;
 
-    private Waypoint(BlockPos pos, String name, Supplier<SkinTextures> skin, long created) {
+    private Waypoint(GlobalPos pos, String name, Supplier<SkinTextures> skin, long created) {
         this.pos = pos;
         this.name = name;
         this.skin = skin;
@@ -29,7 +32,7 @@ public class Waypoint {
         this.farAway = !this.isClientInRange(10);
     }
 
-    public static Waypoint create(BlockPos pos, UUID owner) {
+    public static Waypoint create(GlobalPos pos, UUID owner) {
         String name = "";
         Supplier<SkinTextures> skin = () -> null;
         ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
@@ -41,10 +44,15 @@ public class Waypoint {
             }
         }
         return new Waypoint(pos, name, skin, System.currentTimeMillis());
+        //minecraft:dimension / minecraft:overworld
     }
 
     public BlockPos pos() {
-        return this.pos;
+        return this.pos.getPos();
+    }
+
+    public RegistryKey<World> dimension() {
+        return this.pos.getDimension();
     }
 
     public String name() {
@@ -57,15 +65,15 @@ public class Waypoint {
     }
 
     public int posX() {
-        return this.pos.getX();
+        return this.pos().getX();
     }
 
     public int posY() {
-        return this.pos.getY();
+        return this.pos().getY();
     }
 
     public int posZ() {
-        return this.pos.getZ();
+        return this.pos().getZ();
     }
 
     public boolean tryRemove() {
@@ -74,7 +82,7 @@ public class Waypoint {
 
     private boolean isClientInRange(int distance) {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
-        return player != null && player.getBlockPos().isWithinDistance(this.pos, distance);
+        return player != null && player.getBlockPos().isWithinDistance(this.pos.getPos(), distance);
     }
 
     public float getAngelToWaypoint() {

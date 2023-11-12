@@ -83,7 +83,7 @@ public final class WaypointRenderer {
             Vec3d cameraPos = activeRender.getPos();
 
             Vector3f lookVector = activeRender.getHorizontalPlane().get(new Vector3f());
-            this.filter.setParams(lookVector, cameraPos);
+            this.filter.setParams(lookVector, cameraPos, entity.getWorld().getRegistryKey());
             Stream<Waypoint> waypointStream = waypoints.stream().filter(this.filter);
 
             double fov = MC.options.getFov().getValue().doubleValue();

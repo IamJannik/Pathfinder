@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.UUID;
 
 public class PathfinderClientUtil {
-
     public static Collection<String> getTeamPlayers() {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
         if (player != null) {
