@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.VertexSorter;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.Window;
-import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 
 /**
@@ -44,11 +43,11 @@ public class WaypointModel {
     /**
      * Handles the application of the world model-view matrix.
      *
-     * @param matrixStack The matrix stack containing the world model-view matrix.
+     * @param matrix The matrix stack containing the world model-view matrix.
      */
-    public static void onWorldModelViewMatrix(MatrixStack matrixStack) {
+    public static void onWorldModelViewMatrix(Matrix4f matrix) {
         waypointModelView.identity();
-        waypointModelView.mul(matrixStack.peek().getPositionMatrix());
+        waypointModelView.mul(matrix);
     }
 
     /**
@@ -60,11 +59,11 @@ public class WaypointModel {
         VertexSorter vertexSortingBU = RenderSystem.getVertexSorting();
         Matrix4f ortho = (new Matrix4f()).setOrtho(0.0F, (float) mainwindow.getFramebufferWidth(), (float) mainwindow.getFramebufferHeight(), 0.0F, 1000.0F, 3000.0F);
         RenderSystem.setProjectionMatrix(ortho, VertexSorter.BY_Z);
-        RenderSystem.getModelViewStack().push();
-        RenderSystem.getModelViewStack().loadIdentity();
+        RenderSystem.getModelViewStack().pushMatrix();
+        RenderSystem.getModelViewStack().identity();
         RenderSystem.applyModelViewMatrix();
         WaypointRenderer.getInstance().render(waypointsProjection, waypointModelView);
-        RenderSystem.getModelViewStack().pop();
+        RenderSystem.getModelViewStack().popMatrix();
         RenderSystem.applyModelViewMatrix();
         RenderSystem.setProjectionMatrix(projectionMatrixBU, vertexSortingBU);
     }

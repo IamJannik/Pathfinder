@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -62,7 +63,7 @@ public abstract class MixinSocialScreen extends Screen {
             WaypointHandler.onlyTeam();
         }));
         this.useGangButton.setTooltip(PathfinderConfig.USE_GANG ? Tooltip.of(useTeamText) : Tooltip.of(useGangText));
-        this.useGangButton.setTooltipDelay(10);
+        this.useGangButton.setTooltipDelay(Duration.ofMillis(10));
     }
 
     @Redirect(method = "init", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/multiplayer/SocialInteractionsPlayerListWidget;getRowWidth()I"))

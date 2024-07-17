@@ -110,7 +110,7 @@ public class RegExEr {
         BlockPos pos = new BlockPos(x, y, z);
         String dimension = splits[firstPos + 5].split("\\.")[0]; // Dimension
         String dimensionKey = dimension.replace(" ", ":").replaceAll("[\\W&&[^:]]", "");
-        RegistryKey<World> world = RegistryKey.of(RegistryKeys.WORLD, new Identifier(dimensionKey.toLowerCase()));
+        RegistryKey<World> world = RegistryKey.of(RegistryKeys.WORLD, Identifier.of(dimensionKey.toLowerCase()));
         return GlobalPos.create(world, pos);
     }
 

@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -49,7 +50,7 @@ public abstract class MixinSocialPlayerListEntry {
     public void addGangButton(MinecraftClient client, SocialInteractionsScreen parent, UUID uuid, String name, Supplier<SkinTextures> skinTexture, boolean reportable, CallbackInfo ci) {
         this.gangButton = new ToggleTexturedButton(0, 0, 20, 20, GangHandler.isMember(uuid), GANG_MEMBER_TEXTURE, SINGLE_PERSON_TEXTURE, (button) -> this.changeGangVisible(uuid));
         this.gangButton.setTooltip(Tooltip.of(GangHandler.isMember(uuid) ? removePlayerText : addPlayerText));
-        this.gangButton.setTooltipDelay(10);
+        this.gangButton.setTooltipDelay(Duration.ofMillis(10));
         this.buttons.add(this.gangButton);
     }
 

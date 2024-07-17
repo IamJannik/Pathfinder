@@ -49,8 +49,8 @@ public final class WaypointRenderer {
 
     private WaypointRenderer() {
         MC = MinecraftClient.getInstance();
-        matrixStack = new DrawContext(MC, new BufferBuilderStorage().getEntityVertexConsumers());
-        matrixStackOverlay = new DrawContext(MC, new BufferBuilderStorage().getEntityVertexConsumers());
+        matrixStack = new DrawContext(MC, new BufferBuilderStorage(256).getEntityVertexConsumers());
+        matrixStackOverlay = new DrawContext(MC, new BufferBuilderStorage(256).getEntityVertexConsumers());
     }
 
     /**
@@ -69,9 +69,8 @@ public final class WaypointRenderer {
      * @param worldModelView      The Matrix4f instance for the representation of the world model view.
      */
     public void render(Matrix4f waypointsProjection, Matrix4f worldModelView) {
-        if (MC.player == null) {
+        if (MC.player == null)
             return;
-        }
 
         this.textRenderer = MC.textRenderer;
         if (this.textRenderer == null)
@@ -117,7 +116,7 @@ public final class WaypointRenderer {
     /**
      * Renders the waypoints based on the provided parameters.
      *
-     * @param iter                   Iterator over the waypoints to render.
+     * @param waypoints                   Iterator over the waypoints to render.
      * @param cameraPos              The position of the camera.
      * @param entity                 The camera entity.
      * @param entityPos              The position of the camera entity.
@@ -126,7 +125,7 @@ public final class WaypointRenderer {
      * @param vertexConsumerProvider The vertex consumer provider for rendering.
      * @param waypointsProjection    The Matrix4f instance representing the projection of the waypoints.
      */
-    private void renderWaypoints(Iterator<Waypoint> iter, Vec3d cameraPos, Entity entity, Vec3d entityPos, Vector3f lookVector, double clampDepth, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection) {
+    private void renderWaypoints(Iterator<Waypoint> waypoints, Vec3d cameraPos, Entity entity, Vec3d entityPos, Vector3f lookVector, double clampDepth, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection) {
         MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
         matrixStackOverlay.translate(0.0F, 0.0F, -2980.0F);
 
@@ -134,8 +133,8 @@ public final class WaypointRenderer {
         this.closestWaypoint = null;
         boolean showAllInfo = entity.isSneaking();
 
-        while (iter.hasNext()) {
-            Waypoint waypoint = iter.next();
+        while (waypoints.hasNext()) {
+            Waypoint waypoint = waypoints.next();
             this.renderWaypoint(waypoint, lookVector, clampDepth, cameraPos, entityPos, vertexConsumerProvider, waypointsProjection, false, showAllInfo);
             ++count;
             if (count < 19500) {
@@ -332,7 +331,9 @@ public final class WaypointRenderer {
         }
 
         matrixStackOverlay.scale((float) labelScale, (float) labelScale, 1.0F);
-        MinecraftClient.getInstance().textRenderer.draw(label, -halfBgW + 2, 1.0F, -1, false, matrixStackOverlay.peek().getPositionMatrix(), vertexConsumerProvider, TextRenderer.TextLayerType.NORMAL, 0, 15728880);
+
+        this.matrixStackOverlay.fill(-halfBgW, 0, halfBgW, textRenderer.fontHeight, 0x60000000);
+        this.textRenderer.draw(label, -halfBgW + 2, 1.0F, -1, false, matrixStackOverlay.peek().getPositionMatrix(), vertexConsumerProvider, TextRenderer.TextLayerType.NORMAL, 0, 15728880);
         matrixStackOverlay.translate(0.0F, 9.0F, 0.0F);
         matrixStackOverlay.scale((float) (1.0 / labelScale), (float) (1.0 / labelScale), 1.0F);
         if ((bgW & 1) != 0) {

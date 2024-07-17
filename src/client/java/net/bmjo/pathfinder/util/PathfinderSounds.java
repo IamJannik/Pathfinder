@@ -1,6 +1,6 @@
 package net.bmjo.pathfinder.util;
 
-import net.bmjo.pathfinder.Pathfinder;
+import net.bmjo.pathfinder.PathfinderClient;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.sound.SoundEvent;
@@ -10,7 +10,7 @@ import net.minecraft.util.Identifier;
  * Sounds of Pathfinder.
  */
 public class PathfinderSounds {
-    public static final Identifier WAYPOINT_CREATE_ID = Pathfinder.identifier("waypoint_create");
+    public static final Identifier WAYPOINT_CREATE_ID = PathfinderClient.identifier("waypoint_create");
     public final static SoundEvent WAYPOINT_CREATE = SoundEvent.of(WAYPOINT_CREATE_ID);
 
     public static void registerSounds() {

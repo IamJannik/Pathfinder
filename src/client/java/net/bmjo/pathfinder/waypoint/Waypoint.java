@@ -73,7 +73,7 @@ public class Waypoint {
      * @return The block position.
      */
     public BlockPos pos() {
-        return this.pos.getPos();
+        return this.pos.pos();
     }
 
     /**
@@ -109,7 +109,7 @@ public class Waypoint {
      * @return The dimension key.
      */
     public RegistryKey<World> dimension() {
-        return this.pos.getDimension();
+        return this.pos.dimension();
     }
 
     /**
@@ -148,7 +148,7 @@ public class Waypoint {
      */
     private boolean isClientInRange(int distance) {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
-        return player != null && player.getBlockPos().isWithinDistance(this.pos.getPos(), distance);
+        return player != null && player.getBlockPos().isWithinDistance(this.pos.pos(), distance);
     }
 
     /**

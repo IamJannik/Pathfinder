@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 public class PathfinderClient implements ClientModInitializer {
 	public static final String MOD_ID = "pathfinder";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	public static boolean is_loaded = false;
+	public static boolean is_loaded = true;
 
 	@Override
 	public void onInitializeClient() {
@@ -31,7 +31,7 @@ public class PathfinderClient implements ClientModInitializer {
 	}
 
 	public static Identifier identifier(String name) {
-		return new Identifier(MOD_ID, name);
+		return Identifier.of(MOD_ID, name);
 	}
 
 	@Nullable
