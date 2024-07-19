@@ -1,9 +1,5 @@
 package net.bmjo.pathfinder.waypoint;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.systems.VertexSorter;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.Window;
 import org.joml.Matrix4f;
 
 /**
@@ -54,6 +50,7 @@ public class WaypointModel {
      * Starts the rendering process for waypoints.
      */
     public static void onRenderStart() {
+        /*
         Window mainwindow = MinecraftClient.getInstance().getWindow();
         Matrix4f projectionMatrixBU = RenderSystem.getProjectionMatrix();
         VertexSorter vertexSortingBU = RenderSystem.getVertexSorting();
@@ -66,5 +63,7 @@ public class WaypointModel {
         RenderSystem.getModelViewStack().popMatrix();
         RenderSystem.applyModelViewMatrix();
         RenderSystem.setProjectionMatrix(projectionMatrixBU, vertexSortingBU);
+
+         */
     }
 }

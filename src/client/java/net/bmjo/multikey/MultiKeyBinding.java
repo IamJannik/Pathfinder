@@ -5,7 +5,6 @@ import net.bmjo.multikey.annotation.Unfinished;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -25,7 +24,6 @@ public class MultiKeyBinding extends KeyBinding {
     private final Collection<InputUtil.Key> defaultKeys;
     private final Collection<InputUtil.Key> boundKeys;
     private int timesPressed;
-    private final boolean sneak;
 
     /**
      * Gets a set of all {@code MultiKeyBinding} instances bound to the specified key.
@@ -67,12 +65,10 @@ public class MultiKeyBinding extends KeyBinding {
      *
      * @param translationKey The translation key for display purposes.
      * @param category       The category to which this key binding belongs.
-     * @param sneak          Whether this key binding requires sneaking.
      * @param keys           The keys associated with this binding.
      */
-    public MultiKeyBinding(String translationKey, String category, boolean sneak, InputUtil.Key... keys) {
+    public MultiKeyBinding(String translationKey, String category, InputUtil.Key... keys) {
         super(translationKey, GLFW.GLFW_KEY_UNKNOWN, category);
-        this.sneak = sneak;
         this.boundKeys = Sets.newHashSet(keys);
         this.defaultKeys = this.boundKeys;
 
@@ -101,10 +97,7 @@ public class MultiKeyBinding extends KeyBinding {
 
     public boolean allPressed() {
         MinecraftClient mc = MinecraftClient.getInstance();
-        PlayerEntity player = mc.player;
         long window = mc.getWindow().getHandle();
-        if (this.sneak && player != null && !player.isSneaking())
-            return false;
         for (InputUtil.Key key : this.boundKeys)
             if (key.getCategory() == InputUtil.Type.MOUSE && GLFW.glfwGetMouseButton(window, key.getCode()) != GLFW.GLFW_PRESS)
                 return false;

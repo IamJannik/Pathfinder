@@ -12,13 +12,17 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.*;
@@ -80,19 +84,22 @@ public class WaypointHandler {
         if (player == null)
             return;
         UUID uuid = player.getUuid();
-        if (WAYPOINTS.containsKey(uuid) && Waypoint.getAngelToWaypoint(WAYPOINTS.get(uuid).pos()) < 10) {
+        if (WAYPOINTS.containsKey(uuid) && Waypoint.getViewAngelToPlayer(WAYPOINTS.get(uuid).pos()) < 10) {
             deleteWaypoint();
         }
         else {
-            if (!(hitResult instanceof BlockHitResult blockHitResult))
-                return;
-            BlockPos hitPos = blockHitResult.getBlockPos();
-            World world = player.getWorld();
-            if (world.getBlockState(hitPos).isAir())
-                return;
-            addWaypoint(uuid, GlobalPos.create(world.getRegistryKey(), hitPos));
-            if (canSend())
-                sendCreate(hitPos);
+            if (hitResult instanceof BlockHitResult blockHitResult) {
+                BlockPos hitPos = blockHitResult.getBlockPos();
+                World world = player.getWorld();
+                ClientPlayNetworking.send(new ServerNetworking.CreateGangWaypointPayload(uuid, hitPos, world.getRegistryKey().getValue().toString()));
+                if (world.getBlockState(hitPos).isAir())
+                    return;
+                addWaypoint(uuid, GlobalPos.create(world.getRegistryKey(), hitPos));
+                if (canSend())
+                    sendCreate(hitPos);
+            } else if (hitResult instanceof EntityHitResult entityHitResult) {
+                ClientPlayNetworking.send(new ServerNetworking.WaypointEntity(entityHitResult.getEntity().getUuid()));
+            }
         }
     }
 
@@ -225,9 +232,22 @@ public class WaypointHandler {
      * @return The hit result.
      */
     private static HitResult raycastWaypoint() {
-        Entity entity = MinecraftClient.getInstance().getCameraEntity();
-        assert entity != null;
-        return entity.raycast(MinecraftClient.getInstance().options.getViewDistance().getValue() * 16, 1.0F, false);
+        MinecraftClient mc = MinecraftClient.getInstance();
+        Entity camera = mc.getCameraEntity();
+        assert camera != null;
+        float tickDelta = 1.0F; // MinecraftClient.getInstance().gameRenderer.getCamera().getLastTickDelta();
+        double maxDistance = mc.options.getViewDistance().getValue() * 16;
+        Vec3d start = camera.getCameraPosVec(tickDelta);
+        HitResult blockHitResult = camera.raycast(maxDistance, tickDelta, false); // get Block raycast
+        double blockHitDistance = blockHitResult.getPos().squaredDistanceTo(start);
+        if (blockHitResult.getType() != HitResult.Type.MISS) // reduce maxDistance to the block hit distance
+            maxDistance = blockHitDistance;
+        maxDistance = Math.min(maxDistance, mc.options.getSimulationDistance().getValue() * 16);
+        Vec3d cameraView = camera.getRotationVec(tickDelta);
+        Vec3d end = start.add(cameraView.getX() * maxDistance, cameraView.getY() * maxDistance, cameraView.getZ() * maxDistance);
+        Box box = camera.getBoundingBox().stretch(end).expand(1.0, 1.0, 1.0);
+        HitResult entityHitResult = ProjectileUtil.raycast(camera, start, end, box, (entity) -> !entity.isSpectator(), maxDistance); // get Entity raycast
+        return entityHitResult != null && entityHitResult.getPos().squaredDistanceTo(start) < blockHitDistance ? entityHitResult : blockHitResult; // return closest
     }
 
     /**

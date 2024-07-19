@@ -151,14 +151,18 @@ public class Waypoint {
         return player != null && player.getBlockPos().isWithinDistance(this.pos.pos(), distance);
     }
 
+    public static Vec3d getOffset() {
+        return new Vec3d(0.5, 1.5, 0.5);
+    }
+
     /**
      * Calculates the angle between the player's camera and the waypoint with the block position of the waypoint.
-     * {@link Waypoint#getAngelToWaypoint(BlockPos)}
+     * {@link Waypoint#getAngelToPlayer(BlockPos)}
      *
      * @return The angle to the waypoint.
      */
-    public float getAngelToWaypoint() {
-        return getAngelToWaypoint(this.pos());
+    public float getAngelToPlayer() {
+        return getAngelToPlayer(this.pos());
     }
 
     /**
@@ -167,29 +171,33 @@ public class Waypoint {
      * @param blockPos The block position to calculate the angle to.
      * @return The angle to the specified block position.
      */
-    public static float getAngelToWaypoint(BlockPos blockPos) {
+    public static float getAngelToPlayer(BlockPos blockPos) {
         MinecraftClient mc = MinecraftClient.getInstance();
-
         assert mc.world != null;
+
         int wX = blockPos.getX();
         int wZ = blockPos.getZ();
 
         Camera camera = mc.gameRenderer.getCamera();
         Vec3d cameraPos = camera.getPos();
-        double offX = (double) wX - cameraPos.getX() + 0.5;
-        double offZ = (double) wZ - cameraPos.getZ() + 0.5;
+        double offX = (double) wX - cameraPos.getX();
+        double offZ = (double) wZ - cameraPos.getZ();
 
-        float Z = (float) (offZ == 0.0D ? 0.001F : offZ);
-        float angle = (float) Math.toDegrees(Math.atan(-offX / (double) Z));
-        if (offZ < 0.0) {
-            if (offX < 0.0) {
-                angle += 180.0F;
-            } else {
-                angle -= 180.0F;
-            }
-        }
+        double angle = Math.toDegrees(Math.atan2(offZ, offX));
+        return (float) MathHelper.wrapDegrees(angle + 90.0F);
+    }
 
-        float offset = MathHelper.wrapDegrees(angle - camera.getYaw());
-        return Math.abs(offset);
+    public float getViewAngelToPlayer() {
+        return getViewAngelToPlayer(this.pos());
+    }
+
+
+    public static float getViewAngelToPlayer(BlockPos blockPos) {
+        float angle = getAngelToPlayer(blockPos);
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        Camera camera = mc.gameRenderer.getCamera();
+
+        return MathHelper.wrapDegrees(angle - camera.getYaw() - 180.0F);
     }
 }

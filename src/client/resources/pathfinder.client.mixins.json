@@ -4,8 +4,6 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "MixinChatHud",
-    "MixinGameRenderer",
-    "MixinInGameHud",
     "MixinMessageHandler",
     "MixinSocialPlayerListEntry",
     "MixinSocialScreen"

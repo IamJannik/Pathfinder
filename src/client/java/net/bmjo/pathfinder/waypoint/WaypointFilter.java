@@ -3,7 +3,6 @@ package net.bmjo.pathfinder.waypoint;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import org.joml.Vector3f;
 
 import java.util.function.Predicate;
 
@@ -15,7 +14,7 @@ import java.util.function.Predicate;
  * @version 1.0
  */
 public class WaypointFilter implements Predicate<Waypoint> {
-    private Vector3f lookVector;
+    private Vec3d lookVector;
     private Vec3d cameraPos;
     private RegistryKey<World> dimension;
 
@@ -26,7 +25,7 @@ public class WaypointFilter implements Predicate<Waypoint> {
      * @param cameraPos  The position of the client player's camera.
      * @param dimension  The dimension key to filter waypoints by.
      */
-    public void setParams(Vector3f lookVector, Vec3d cameraPos, RegistryKey<World> dimension) {
+    public void setParams(Vec3d lookVector, Vec3d cameraPos, RegistryKey<World> dimension) {
         this.lookVector = lookVector;
         this.cameraPos = cameraPos;
         this.dimension = dimension;
@@ -46,7 +45,7 @@ public class WaypointFilter implements Predicate<Waypoint> {
         double offY = waypoint.posY() - this.cameraPos.getY() + 1.0;
         double offZ = waypoint.posZ() - this.cameraPos.getZ() + 0.5;
 
-        double depth = offX * (double) this.lookVector.x() + offY * (double) this.lookVector.y() + offZ * (double) this.lookVector.z();
+        double depth = offX * this.lookVector.getX() + offY * this.lookVector.getY() + offZ * this.lookVector.getZ();
         if (depth <= 0.1) {
             return false;
         } else {

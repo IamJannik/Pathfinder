@@ -5,18 +5,14 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.PlayerSkinDrawer;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.BufferBuilderStorage;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
+import org.joml.Quaternionf;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -28,7 +24,7 @@ import java.util.stream.Stream;
  * Manages the rendering of waypoints in the Minecraft world, including player heads, labels, and distances.
  *
  * @author BMJO
- * @version 1.7
+ * @version 2.0
  */
 public final class WaypointRenderer {
     /**
@@ -38,19 +34,13 @@ public final class WaypointRenderer {
     private final MinecraftClient MC;
     @Nullable
     private TextRenderer textRenderer;
-    private final DrawContext matrixStack;
-    private final DrawContext matrixStackOverlay;
-    @Nullable
-    private Waypoint closestWaypoint;
-    @Nullable
-    private Waypoint previousClosest;
-    private double workingClosestCos; // angle
+    private final DrawContext drawContext;
     private final WaypointFilter filter = new WaypointFilter();
+    private static final float SIZE = 0.6F;
 
     private WaypointRenderer() {
         MC = MinecraftClient.getInstance();
-        matrixStack = new DrawContext(MC, new BufferBuilderStorage(256).getEntityVertexConsumers());
-        matrixStackOverlay = new DrawContext(MC, new BufferBuilderStorage(256).getEntityVertexConsumers());
+        drawContext = new DrawContext(MC, new BufferBuilderStorage(256).getEntityVertexConsumers());
     }
 
     /**
@@ -62,298 +52,131 @@ public final class WaypointRenderer {
         return INSTANCE;
     }
 
-    /**
-     * Renders waypoints in the world.
-     *
-     * @param waypointsProjection The Matrix4f instance representing the projection of the waypoints.
-     * @param worldModelView      The Matrix4f instance for the representation of the world model view.
-     */
-    public void render(Matrix4f waypointsProjection, Matrix4f worldModelView) {
-        if (MC.player == null)
+    public void render() {
+        if (MC.player == null || MC.world == null)
             return;
 
         this.textRenderer = MC.textRenderer;
         if (this.textRenderer == null)
             return;
 
-        MatrixStack matrixStack = this.matrixStack.getMatrices();
-        MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
-
-        RenderSystem.disableCull();
-        matrixStack.push();
-        matrixStack.peek().getPositionMatrix().mul(worldModelView);
-        DiffuseLighting.disableGuiDepthLighting();
-
-        matrixStackOverlay.push();
-
         List<Waypoint> waypoints = new ArrayList<>(WaypointHandler.WAYPOINTS.values());
-        if (!waypoints.isEmpty() && MC.world != null) {
-            Entity entity = MC.getCameraEntity();
-            Camera activeRender = MC.gameRenderer.getCamera();
-            assert entity != null;
-            Vec3d entityPos = entity.getPos();
-            Vec3d cameraPos = activeRender.getPos();
+        if (!waypoints.isEmpty()) {
+            ClientPlayerEntity player = MC.player;
+            boolean showAllInfo = player.isSneaking();
+            Camera camera = MC.gameRenderer.getCamera();
+            Vec3d cameraPos = camera.getPos();
 
-            Vector3f lookVector = activeRender.getHorizontalPlane().get(new Vector3f());
-            this.filter.setParams(lookVector, cameraPos, entity.getWorld().getRegistryKey());
+            Vec3d lookVector = Vec3d.fromPolar(camera.getPitch(), camera.getYaw());
+            this.filter.setParams(lookVector, cameraPos, player.getWorld().getRegistryKey());
             Stream<Waypoint> waypointStream = waypoints.stream().filter(this.filter);
 
-            double fov = MC.options.getFov().getValue().doubleValue();
-            double clampDepth = getWaypointsClampDepth(fov, MC.getWindow().getFramebufferHeight());
-
-            VertexConsumerProvider.Immediate vertexConsumerProvider = this.matrixStackOverlay.getVertexConsumers();
-            this.renderWaypoints(waypointStream.iterator(), cameraPos, entity, entityPos, lookVector, clampDepth, vertexConsumerProvider, waypointsProjection);
+            this.renderWaypoints(waypointStream.iterator(), camera, showAllInfo);
         }
-
-        matrixStackOverlay.pop();
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        DiffuseLighting.enableGuiDepthLighting();
-        matrixStack.pop();
     }
 
-    /**
-     * Renders the waypoints based on the provided parameters.
-     *
-     * @param waypoints                   Iterator over the waypoints to render.
-     * @param cameraPos              The position of the camera.
-     * @param entity                 The camera entity.
-     * @param entityPos              The position of the camera entity.
-     * @param lookVector             The look vector of the camera.
-     * @param clampDepth             The depth at which waypoints should be clamped.
-     * @param vertexConsumerProvider The vertex consumer provider for rendering.
-     * @param waypointsProjection    The Matrix4f instance representing the projection of the waypoints.
-     */
-    private void renderWaypoints(Iterator<Waypoint> waypoints, Vec3d cameraPos, Entity entity, Vec3d entityPos, Vector3f lookVector, double clampDepth, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection) {
-        MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
-        matrixStackOverlay.translate(0.0F, 0.0F, -2980.0F);
-
-        int count = 0;
-        this.closestWaypoint = null;
-        boolean showAllInfo = entity.isSneaking();
+    private void renderWaypoints(Iterator<Waypoint> waypoints, Camera camera, boolean showAllInfo) {
+        MatrixStack matrixStack = this.drawContext.getMatrices();
+        matrixStack.push();
 
         while (waypoints.hasNext()) {
             Waypoint waypoint = waypoints.next();
-            this.renderWaypoint(waypoint, lookVector, clampDepth, cameraPos, entityPos, vertexConsumerProvider, waypointsProjection, false, showAllInfo);
-            ++count;
-            if (count < 19500) {
-                matrixStackOverlay.translate(0.0F, 0.0F, 0.1F);
-            }
+            this.renderWaypoint(waypoint, camera, showAllInfo);
+            matrixStack.translate(0.0F, 0.0F, 0.1F);
         }
 
-        if (!showAllInfo && this.previousClosest != null) {
-            this.renderWaypoint(this.previousClosest, lookVector, clampDepth, cameraPos, entityPos, vertexConsumerProvider, waypointsProjection, true, false);
-        }
-
-        this.previousClosest = this.closestWaypoint;
-        vertexConsumerProvider.draw();
-        RenderSystem.clear(256, MinecraftClient.IS_SYSTEM_MAC);
+        matrixStack.pop();
     }
 
-    /**
-     * Renders a single waypoint based on the provided parameters.
-     *
-     * @param waypoint              The waypoint to render.
-     * @param lookVector            The look vector of the camera.
-     * @param depthClamp            The depth at which waypoints should be clamped.
-     * @param cameraPos             The position of the camera.
-     * @param entityPos             The position of the camera entity.
-     * @param vertexConsumerProvider The vertex consumer provider for rendering.
-     * @param waypointsProjection  The Matrix4f instance representing the projection of the waypoints.
-     * @param isTheMain             Indicates if the waypoint is the main one which he player is looking at.
-     * @param showAllInfo           Indicates if all information should be shown.
-     */
-    private void renderWaypoint(Waypoint waypoint, Vector3f lookVector, double depthClamp, Vec3d cameraPos, Vec3d entityPos, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, boolean isTheMain, boolean showAllInfo) {
-        MatrixStack matrixStack = this.matrixStack.getMatrices();
-        MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
+    private void renderWaypoint(Waypoint waypoint, Camera camera, boolean showAllInfo) {
+        MatrixStack matrixStack = drawContext.getMatrices();
+        matrixStack.push();
 
-        int wX = waypoint.posX();
-        int wZ = waypoint.posZ();
+        Vec3d waypointPos = new Vec3d(waypoint.posX(), waypoint.posY(), waypoint.posZ());
+        Vec3d transformVec = waypointPos.subtract(camera.getPos());
+        float distance = (float) transformVec.length();
 
-        double offX = (double) wX - cameraPos.getX() + 0.5;
-        double offY = (double) waypoint.posY() - cameraPos.getY() + 1.0;
-        double offZ = (double) wZ - cameraPos.getZ() + 0.5;
+        if (distance >= 0.0D) {
+            // ORIGIN
+            matrixStack.multiply(camera.getRotation().invert());
+            Vec3d waypointOffset = Waypoint.getOffset();
+            matrixStack.translate(waypointOffset.getX(), waypointOffset.getY(), waypointOffset.getZ()); // over block offset
 
-        double distance2D = Math.sqrt(offX * offX + offZ * offZ);
+            //POSITION
+            matrixStack.translate(transformVec.x, transformVec.y, transformVec.z); // waypoint position offset
 
-        if (distance2D >= 0.0D) {
+            // ANGLE
+            Quaternionf quaternion = new Quaternionf().rotateXYZ((float) Math.toRadians(camera.getPitch()), (float) -Math.toRadians(camera.getYaw()), (float) Math.toRadians(180.0F));
+            matrixStack.multiply(quaternion.invert()); // rotate to player view
+
+            // SIZE
+            // TODO GUI SCALE
+            float scale = SIZE / 16.0F;
+            float distanceScale = Math.max(scale * (distance / 4.0F), scale);
+            matrixStack.scale(distanceScale, distanceScale, distanceScale);
+
+
             String name = waypoint.owner();
             String distanceText = "";
 
-            double depth = offX * (double) lookVector.x() + offY * (double) lookVector.y() + offZ * (double) lookVector.z();
-            double correctOffX = entityPos.getX() - (double) wX - 0.5;
-            double correctOffY = entityPos.getY() - (double) waypoint.posY();
+            if (distance > 10.0D) {
+                boolean couldShowLabels = Math.abs(waypoint.getViewAngelToPlayer()) < 10.0F;
 
-            double distance = Math.sqrt(offX * offX + offY * offY + offZ * offZ);
-            double correctOffZ = entityPos.getZ() - (double) wZ - 0.5;
-            double correctDistance = Math.sqrt(correctOffX * correctOffX + correctOffY * correctOffY + correctOffZ * correctOffZ);
-
-            if (correctDistance > 10.0D) {
-                boolean couldShowLabels = waypoint.getAngelToWaypoint() < 10;
-                boolean showDLabels = couldShowLabels && shouldShowDistance(waypoint, isTheMain, showAllInfo, depth, distance);
-
-                if (showDLabels) {
-                    if (correctDistance >= 10000.0D) { //KM
-                        distanceText = new DecimalFormat("0.0").format(correctDistance / 1000.0) + "km";
+                if (showAllInfo || couldShowLabels) {
+                    if (distance >= 10000.0D) { //KM
+                        distanceText = new DecimalFormat("0.0").format(distance / 1000.0) + "km";
                     } else {
-                        distanceText = new DecimalFormat("0.0").format(correctDistance) + "m";
+                        distanceText = new DecimalFormat("0.0").format(distance) + "m";
                     }
                 } else {
                     name = "";
                 }
             }
 
-            if (showAllInfo || this.previousClosest != waypoint || isTheMain) {
-                matrixStack.push();
-                matrixStackOverlay.push();
-                if (distance > 250000.0) {
-                    double cos = 250000.0 / distance;
-                    offX *= cos;
-                    offY *= cos;
-                    offZ *= cos;
-                }
-
-                matrixStack.translate(offX, offY, offZ);
-                this.drawAsOverlay(waypoint, name, distanceText, vertexConsumerProvider, waypointsProjection, depthClamp, depth);
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-                matrixStack.pop();
-                matrixStackOverlay.pop();
-            }
+            this.drawAsOverlay(waypoint, name, distanceText);
         }
+        matrixStack.pop();
     }
 
-    /**
-     * Determines whether the distance label should be shown for a waypoint.
-     *
-     * @param waypoint   The waypoint being considered.
-     * @param isTheMain  Indicates if the waypoint is the main one which he player is looking at.
-     * @param showAllInfo Indicates if all information should be shown.
-     * @param depth      The depth of the waypoint.
-     * @param distance   The distance of the waypoint.
-     * @return True if the distance label should be shown, false otherwise.
-     */
-    private boolean shouldShowDistance(Waypoint waypoint, boolean isTheMain, boolean showAllInfo, double depth, double distance) {
-        if (isTheMain) {
-            return true;
-        } else {
-            double cos = depth / distance;
-            if (this.closestWaypoint == null || cos > this.workingClosestCos) {
-                this.closestWaypoint = waypoint;
-                this.workingClosestCos = cos;
-            }
-            return showAllInfo;
+    private void drawAsOverlay(Waypoint waypoint, String name, String distance) {
+        MatrixStack matrixStack = this.drawContext.getMatrices();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        matrixStack.push();
+        //MC.getEntityRenderDispatcher().getRenderer(null).getTexture(null);
+
+        this.drawPlayerHead(waypoint);
+
+        matrixStack.scale(0.5F, 0.5F, 0.5F);
+        if (!name.isEmpty()) {
+            this.renderWaypointLabel(name);
         }
+
+        if (!distance.isEmpty()) {
+            this.renderWaypointLabel(distance);
+        }
+        matrixStack.pop();
     }
 
-    /**
-     * Sets up the overlay rendering for a waypoint including player head, name, and distance.
-     *
-     * @param waypoint              The waypoint to draw.
-     * @param name                  The name of the waypoint owner.
-     * @param distance              The distance text to display.
-     * @param vertexConsumerProvider The vertex consumer provider for rendering.
-     */
-    private void drawAsOverlay(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider, Matrix4f waypointsProjection, double depthClamp, double depth) {
-        MatrixStack matrixStack = this.matrixStack.getMatrices();
-        MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
-
-        Vector4f origin4f = new Vector4f(0.0F, 0.0F, 0.0F, 1.0F);
-        origin4f.mul(matrixStack.peek().getPositionMatrix());
-        origin4f.mul(waypointsProjection);
-        int overlayPosX = (int) ((1.0F + origin4f.x() / origin4f.w()) / 2.0F * (float) MC.getWindow().getFramebufferWidth());
-        int overlayPosY = (int) ((1.0F - origin4f.y() / origin4f.w()) / 2.0F * (float) MC.getWindow().getFramebufferHeight());
-        matrixStackOverlay.translate((float) overlayPosX, (float) overlayPosY, 0.0F);
-        if (depth < depthClamp) {
-            float scale = (float) (depthClamp / depth);
-            matrixStackOverlay.scale(scale, scale, scale);
-        }
-        this.drawPlayerHead(waypoint, name, distance, vertexConsumerProvider);
-    }
-
-    /**
-     * Draws the player head for a waypoint including optional the name and the distance.
-     *
-     * @param waypoint              The waypoint to draw.
-     * @param name                  The name of the waypoint owner.
-     * @param distance              The distance text to display.
-     * @param vertexConsumerProvider The vertex consumer provider for rendering.
-     */
-    private void drawPlayerHead(Waypoint waypoint, String name, String distance, VertexConsumerProvider.Immediate vertexConsumerProvider) {
-        MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
-
-        int iconScale = 2;
-        double nameScale = 1;
-        double distanceScale = 1;
-
-        int halfIconPixel = iconScale / 2;
-        matrixStackOverlay.translate((float) halfIconPixel, 0.0F, 0.0F);
-        matrixStackOverlay.scale((float) iconScale, (float) iconScale, 1.0F);
-
+    private void drawPlayerHead(Waypoint waypoint) {
         SkinTextures skin = waypoint.skin();
         if (skin != null) {
-            PlayerSkinDrawer.draw(this.matrixStackOverlay, skin, -5, -9, 8);
-        }
-
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(770, 771, 1, 0);
-        boolean showName = !name.isEmpty();
-        matrixStackOverlay.scale((float) (1.0 / iconScale), (float) (1.0 / iconScale), 1.0F);
-        matrixStackOverlay.translate((float) (-halfIconPixel), 0.0F, 0.0F);
-        matrixStackOverlay.translate(0.0F, 2.0F, 0.0F);
-        if (showName) {
-            this.renderWaypointLabel(name, nameScale, vertexConsumerProvider);
-        }
-
-        matrixStackOverlay.translate(0.0F, 2.0F, 0.0F);
-        if (!distance.isEmpty()) {
-            this.renderWaypointLabel(distance, distanceScale, vertexConsumerProvider);
+            int headSize = 8;
+            PlayerSkinDrawer.draw(this.drawContext, skin, -(headSize / 2), -(headSize + 1), headSize);
         }
     }
 
-    /**
-     * Renders the label for a waypoint.
-     *
-     * @param label                 The text to render.
-     * @param labelScale            The scale of the label.
-     * @param vertexConsumerProvider The vertex consumer provider for rendering.
-     */
-    private void renderWaypointLabel(String label, double labelScale, VertexConsumerProvider.Immediate vertexConsumerProvider) {
-        MatrixStack matrixStackOverlay = this.matrixStackOverlay.getMatrices();
+    private void renderWaypointLabel(String label) {
         assert this.textRenderer != null;
+        MatrixStack matrixStack = this.drawContext.getMatrices();
+
         int nameW = this.textRenderer.getWidth(label);
         int bgW = nameW + 3;
         int halfBgW = bgW / 2;
-        int halfNamePixel = 0;
-        if ((bgW & 1) != 0) {
-            halfNamePixel = (int) labelScale - (int) labelScale / 2;
-            matrixStackOverlay.translate((float) (-halfNamePixel), 0.0F, 0.0F);
-        }
+        float bgOpacity = MC.options.getTextBackgroundOpacity(0.25F);
+        int bgColor = (int) (bgOpacity * 255.0F) << 24;
 
-        matrixStackOverlay.scale((float) labelScale, (float) labelScale, 1.0F);
-
-        this.matrixStackOverlay.fill(-halfBgW, 0, halfBgW, textRenderer.fontHeight, 0x60000000);
-        this.textRenderer.draw(label, -halfBgW + 2, 1.0F, -1, false, matrixStackOverlay.peek().getPositionMatrix(), vertexConsumerProvider, TextRenderer.TextLayerType.NORMAL, 0, 15728880);
-        matrixStackOverlay.translate(0.0F, 9.0F, 0.0F);
-        matrixStackOverlay.scale((float) (1.0 / labelScale), (float) (1.0 / labelScale), 1.0F);
-        if ((bgW & 1) != 0) {
-            matrixStackOverlay.translate((float) halfNamePixel, 0.0F, 0.0F);
-        }
-
-        RenderSystem.enableBlend();
-    }
-
-    /**
-     * Calculates the clamp depth for waypoints based on the field of view and window height.
-     *
-     * @param fov    The field of view.
-     * @param height The height of the window.
-     * @return The calculated clamp depth.
-     */
-    private static double getWaypointsClampDepth(double fov, int height) {
-        int baseIconHeight = 8;
-        double worldSizeAtClampDepth = 0.19200003147125244 * (double) height / (double) baseIconHeight;
-        double fovMultiplier = 2.0 * Math.tan(Math.toRadians(fov / 2.0));
-        return worldSizeAtClampDepth / fovMultiplier;
+        this.textRenderer.draw(label, -halfBgW + 2, 0, -1, false, matrixStack.peek().getPositionMatrix(), this.drawContext.getVertexConsumers(), TextRenderer.TextLayerType.SEE_THROUGH, bgColor, -1);
+        this.drawContext.draw();
+        matrixStack.translate(0.0, this.textRenderer.fontHeight, 0.0);
     }
 }

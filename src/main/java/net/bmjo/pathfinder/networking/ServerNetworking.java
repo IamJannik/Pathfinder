@@ -27,7 +27,7 @@ public class ServerNetworking {
     public static final Identifier REMOVE_WAYPOINT = Pathfinder.identifier("remove_waypoint");
     public static final Identifier REMOVE_GANG_WAYPOINT = Pathfinder.identifier("remove_gang_waypoint");
     public static final Identifier REMOVE_TEAM_WAYPOINT = Pathfinder.identifier("remove_team_waypoint");
-    public static final Identifier IS_LOADED = Pathfinder.identifier("is_loaded");
+    public static final Identifier WAYPOINT_ENTITY = Pathfinder.identifier("waypoint_entity");
 
     public record CreateWaypointPayload(UUID uuid, BlockPos blockPos, String dimension) implements CustomPayload {
         public static final CustomPayload.Id<CreateWaypointPayload> ID = new CustomPayload.Id<>(CREATE_WAYPOINT);
@@ -104,9 +104,11 @@ public class ServerNetworking {
         }
     }
 
-    public record IsLoadedPayload() implements CustomPayload {
-        public static final CustomPayload.Id<IsLoadedPayload> ID = new CustomPayload.Id<>(IS_LOADED);
-        public static final PacketCodec<RegistryByteBuf, IsLoadedPayload> CODEC = PacketCodec.unit(new IsLoadedPayload());
+    public record WaypointEntity(UUID uuid) implements CustomPayload {
+        public static final CustomPayload.Id<WaypointEntity> ID = new CustomPayload.Id<>(WAYPOINT_ENTITY);
+        public static final PacketCodec<RegistryByteBuf, WaypointEntity> CODEC = PacketCodec.tuple(
+                Uuids.PACKET_CODEC, WaypointEntity::uuid,
+                WaypointEntity::new);
 
         @Override
         public CustomPayload.Id<? extends CustomPayload> getId() {
@@ -115,70 +117,65 @@ public class ServerNetworking {
     }
 
     public static void register() {
-        PayloadTypeRegistry.playS2C().register(ServerNetworking.CreateWaypointPayload.ID, ServerNetworking.CreateWaypointPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(ServerNetworking.RemoveWaypointPayload.ID, ServerNetworking.RemoveWaypointPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(ServerNetworking.CreateGangWaypointPayload.ID, ServerNetworking.CreateGangWaypointPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(ServerNetworking.CreateTeamWaypointPayload.ID, ServerNetworking.CreateTeamWaypointPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(ServerNetworking.RemoveGangWaypointPayload.ID, ServerNetworking.RemoveGangWaypointPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(ServerNetworking.RemoveTeamWaypointPayload.ID, ServerNetworking.RemoveTeamWaypointPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(IsLoadedPayload.ID, IsLoadedPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(CreateGangWaypointPayload.ID, CreateGangWaypointPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(CreateTeamWaypointPayload.ID, CreateTeamWaypointPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RemoveGangWaypointPayload.ID, RemoveGangWaypointPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RemoveTeamWaypointPayload.ID, RemoveTeamWaypointPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(WaypointEntity.ID, WaypointEntity.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(CreateGangWaypointPayload.ID, (payload, context) -> {
             UUID uuid = payload.uuid();
             BlockPos blockPos = payload.blockPos();
             String dimension = payload.dimension();
-            try (MinecraftServer server = context.server()) {
-                server.execute(() -> {
-                    ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(uuid);
-                    if (serverPlayer != null) {
-                        ServerPlayNetworking.send(serverPlayer, new CreateWaypointPayload(uuid, blockPos, dimension));
-                    }
-                });
-            }
+            MinecraftServer server = context.server();
+            server.execute(() -> {
+                ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(uuid);
+                if (serverPlayer != null) {
+                    ServerPlayNetworking.send(serverPlayer, new CreateWaypointPayload(uuid, blockPos, dimension));
+                }
+            });
         });
 
         ServerPlayNetworking.registerGlobalReceiver(CreateTeamWaypointPayload.ID, (payload, context) -> {
             ServerPlayerEntity sender = context.player();
             BlockPos blockPos = payload.blockPos();
             String dimension = payload.dimension();
-            try (MinecraftServer server = context.server()) {
-                server.execute(() -> {
-                    for (ServerPlayerEntity serverPlayer : getTeamPlayer(server, sender)) {
-                        ServerPlayNetworking.send(serverPlayer, new CreateWaypointPayload(sender.getUuid(), blockPos, dimension));
-                    }
-                });
-            }
+            MinecraftServer server = context.server();
+            server.execute(() -> {
+                for (ServerPlayerEntity serverPlayer : getTeamPlayer(server, sender)) {
+                    ServerPlayNetworking.send(serverPlayer, new CreateWaypointPayload(sender.getUuid(), blockPos, dimension));
+                }
+            });
         });
 
         ServerPlayNetworking.registerGlobalReceiver(RemoveGangWaypointPayload.ID, (payload, context) -> {
             ServerPlayerEntity sender = context.player();
             UUID uuid = payload.uuid();
-            try (MinecraftServer server = context.server()) {
-                server.execute(() -> {
-                    ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(uuid);
-                    if (serverPlayer != null) {
-                        ServerPlayNetworking.send(serverPlayer, new RemoveWaypointPayload(sender.getUuid()));
-                    }
-                });
-            }
+            MinecraftServer server = context.server();
+            server.execute(() -> {
+                ServerPlayerEntity serverPlayer = server.getPlayerManager().getPlayer(uuid);
+                if (serverPlayer != null) {
+                    ServerPlayNetworking.send(serverPlayer, new RemoveWaypointPayload(sender.getUuid()));
+                }
+            });
         });
 
         ServerPlayNetworking.registerGlobalReceiver(RemoveTeamWaypointPayload.ID, (payload, context) -> {
             ServerPlayerEntity sender = context.player();
-            try (MinecraftServer server = context.server()) {
-                server.execute(() -> {
-                    for (ServerPlayerEntity serverPlayer : getTeamPlayer(server, sender)) {
-                        ServerPlayNetworking.send(serverPlayer, new RemoveWaypointPayload(sender.getUuid()));
-                    }
-                });
-            }
+            MinecraftServer server = context.server();
+            server.execute(() -> {
+                for (ServerPlayerEntity serverPlayer : getTeamPlayer(server, sender)) {
+                    ServerPlayNetworking.send(serverPlayer, new RemoveWaypointPayload(sender.getUuid()));
+                }
+            });
         });
 
-        ServerPlayNetworking.registerGlobalReceiver(RemoveTeamWaypointPayload.ID, (payload, context) -> {
-            ServerPlayerEntity sender = context.player();
-            try (MinecraftServer server = context.server()) {
-                server.execute(() -> ServerPlayNetworking.send(sender, new IsLoadedPayload()));
-            }
+        ServerPlayNetworking.registerGlobalReceiver(WaypointEntity.ID, (payload, context) -> {
+            UUID uuid = payload.uuid();
+            MinecraftServer server = context.server();
+            server.execute(() -> {
+                System.out.println(server.getOverworld().getEntity(uuid));
+            });
         });
     }
 
