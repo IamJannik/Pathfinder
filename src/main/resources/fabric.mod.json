@@ -38,6 +38,7 @@
 		"java": ">=17",
 		"fabric-api": "*"
 	},
+	"accessWidener": "pathfinder.accesswidener",
 	"suggests": {
 		"another-mod": "*"
 	}

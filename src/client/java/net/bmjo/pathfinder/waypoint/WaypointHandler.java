@@ -3,15 +3,21 @@ package net.bmjo.pathfinder.waypoint;
 import net.bmjo.pathfinder.PathfinderClient;
 import net.bmjo.pathfinder.config.PathfinderConfig;
 import net.bmjo.pathfinder.gang.GangHandler;
-import net.bmjo.pathfinder.networking.ServerNetworking;
+import net.bmjo.pathfinder.networking.payload.GangWaypointPayload;
+import net.bmjo.pathfinder.networking.payload.TeamWaypointPayload;
 import net.bmjo.pathfinder.util.PathfinderClientUtil;
 import net.bmjo.pathfinder.util.PathfinderSounds;
 import net.bmjo.pathfinder.util.RegExEr;
+import net.bmjo.pathfinder.waypoint.type.ItemWaypoint;
+import net.bmjo.pathfinder.waypoint.type.MobWaypoint;
+import net.bmjo.pathfinder.waypoint.type.PositionWaypoint;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -39,41 +45,9 @@ public class WaypointHandler {
      */
     public static final Map<UUID, Waypoint> WAYPOINTS = new HashMap<>();
     private static int messageCooldown;
-    private static final String createMessage, deleteMessage;
+    private static final String createPosMessage, createEntityMessage, deleteMessage;
 
     //CREATE
-
-    /**
-     * Adds a waypoint for the specified owner at the given global position to {@link WaypointHandler#WAYPOINTS}.
-     *
-     * @param owner     The UUID of the owner.
-     * @param globalPos The global position of the waypoint.
-     */
-    private static void addWaypoint(UUID owner, GlobalPos globalPos) {
-        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
-        if (clientPlayer != null)
-            clientPlayer.playSound(PathfinderSounds.WAYPOINT_CREATE, 1.0F, 1.0F);
-        WAYPOINTS.put(owner, Waypoint.create(owner, globalPos));
-    }
-
-    /**
-     * Attempts to create and add a waypoint for the specified owner at the given global position.
-     *
-     * @param owner    The UUID of the owner.
-     * @param blockPos The global position of the waypoint.
-     */
-    public static void tryAddWaypoint(UUID owner, GlobalPos blockPos) {
-        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
-        if (clientPlayer != null && clientPlayer.getUuid().equals(owner))
-            return;
-        if (PathfinderConfig.USE_GANG) {
-            if (GangHandler.isMember(owner))
-                addWaypoint(owner, blockPos);
-        } else {
-            if (PathfinderClientUtil.isInTeam(owner))
-                addWaypoint(owner, blockPos);
-        }
-    }
 
     /**
      * Creates a waypoint based on the client player's raycast hit result.
@@ -85,20 +59,104 @@ public class WaypointHandler {
             return;
         UUID uuid = player.getUuid();
         if (WAYPOINTS.containsKey(uuid) && Waypoint.getViewAngelToPlayer(WAYPOINTS.get(uuid).pos()) < 10) {
-            deleteWaypoint();
-        }
-        else {
+            removeWaypoint();
+        } else {
             if (hitResult instanceof BlockHitResult blockHitResult) {
-                BlockPos hitPos = blockHitResult.getBlockPos();
                 World world = player.getWorld();
-                ClientPlayNetworking.send(new ServerNetworking.CreateGangWaypointPayload(uuid, hitPos, world.getRegistryKey().getValue().toString()));
+                BlockPos hitPos = blockHitResult.getBlockPos();
                 if (world.getBlockState(hitPos).isAir())
                     return;
-                addWaypoint(uuid, GlobalPos.create(world.getRegistryKey(), hitPos));
-                if (canSend())
-                    sendCreate(hitPos);
+                List<ItemEntity> items = world.getEntitiesByClass(ItemEntity.class, new Box(hitPos).expand(0.2D), Entity::isAlive);
+                if (!items.isEmpty()) {
+                    ItemEntity item = items.get(0);
+                    addItemWaypoint(uuid, item);
+                    sendEntityWaypoint(item);
+                    return;
+                }
+                addPosWaypoint(uuid, GlobalPos.create(world.getRegistryKey(), hitPos));
+                sendPosWaypoint(hitPos);
             } else if (hitResult instanceof EntityHitResult entityHitResult) {
-                ClientPlayNetworking.send(new ServerNetworking.WaypointEntity(entityHitResult.getEntity().getUuid()));
+                Entity entity = entityHitResult.getEntity();
+                if (entity instanceof MobEntity mob) {
+                    addMobWaypoint(uuid, mob);
+                    sendEntityWaypoint(entity);
+                } else if (entity instanceof ItemEntity item) {
+                    addItemWaypoint(uuid, item);
+                }
+            }
+        }
+    }
+
+    /**
+     * Adds a waypoint for the specified owner at the given global position to {@link WaypointHandler#WAYPOINTS}.
+     *
+     * @param owner     The UUID of the owner.
+     * @param globalPos The global position of the waypoint.
+     */
+    private static void addPosWaypoint(UUID owner, GlobalPos globalPos) {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer != null)
+            clientPlayer.playSound(PathfinderSounds.WAYPOINT_CREATE, 1.0F, 1.0F);
+        WAYPOINTS.put(owner, PositionWaypoint.create(owner, globalPos));
+    }
+
+    private static void addMobWaypoint(UUID owner, MobEntity mob) {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer != null)
+            clientPlayer.playSound(PathfinderSounds.WAYPOINT_CREATE, 1.0F, 1.0F);
+        WAYPOINTS.put(owner, MobWaypoint.create(owner, mob));
+    }
+
+    private static void addItemWaypoint(UUID owner, ItemEntity item) {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer != null)
+            clientPlayer.playSound(PathfinderSounds.WAYPOINT_CREATE, 1.0F, 1.0F);
+        WAYPOINTS.put(owner, ItemWaypoint.create(owner, item));
+    }
+
+    /**
+     * Attempts to create and add a waypoint for the specified owner at the given global position.
+     *
+     * @param owner    The UUID of the owner.
+     * @param globalPos The global position of the waypoint.
+     */
+    public static void tryAddPosWaypoint(UUID owner, GlobalPos globalPos) {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer != null && clientPlayer.getUuid().equals(owner))
+            return;
+        if (PathfinderConfig.USE_GANG) {
+            if (GangHandler.isMember(owner))
+                addPosWaypoint(owner, globalPos);
+        } else {
+            if (PathfinderClientUtil.isInTeam(owner))
+                addPosWaypoint(owner, globalPos);
+        }
+    }
+
+    public static void tryAddEntityWaypoint(UUID owner, int entityId) {
+        ClientPlayerEntity clientPlayer = PathfinderClient.getPlayer();
+        if (clientPlayer == null || clientPlayer.getUuid().equals(owner))
+            return;
+        World world = clientPlayer.getWorld();
+        Entity entity = world.getEntityById(entityId);
+        if (entity == null) {
+            return;
+        }
+        if (entity instanceof MobEntity mob) {
+            if (PathfinderConfig.USE_GANG) {
+                if (GangHandler.isMember(owner))
+                    addMobWaypoint(owner, mob);
+            } else {
+                if (PathfinderClientUtil.isInTeam(owner))
+                    addMobWaypoint(owner, mob);
+            }
+        } else if (entity instanceof ItemEntity item) {
+            if (PathfinderConfig.USE_GANG) {
+                if (GangHandler.isMember(owner))
+                    addItemWaypoint(owner, item);
+            } else {
+                if (PathfinderClientUtil.isInTeam(owner))
+                    addItemWaypoint(owner, item);
             }
         }
     }
@@ -108,27 +166,59 @@ public class WaypointHandler {
      *
      * @param blockPos The block position of the waypoint.
      */
-    private static void sendCreate(BlockPos blockPos) {
+    private static void sendPosWaypoint(BlockPos blockPos) {
+        if (!canSend())
+            return;
         ClientPlayerEntity owner = PathfinderClient.getPlayer();
         if (owner == null)
             return;
         Identifier dimension = owner.getWorld().getRegistryKey().getValue();
         if (PathfinderConfig.USE_GANG) {
             if (PathfinderClient.is_loaded) {
-                GangHandler.forEach(uuid -> ClientPlayNetworking.send(new ServerNetworking.CreateGangWaypointPayload(uuid, blockPos, dimension.toString())));
+                GangHandler.forEach(uuid -> ClientPlayNetworking.send(new GangWaypointPayload.CreatePos(uuid, blockPos, dimension.toString())));
             } else {
                 GangHandler.forEach((uuid -> {
                     PlayerListEntry member = owner.networkHandler.getPlayerListEntry(uuid);
                     if (member != null)
-                        owner.networkHandler.sendChatCommand(String.format("msg %s " + createMessage, member.getProfile().getName(), blockPos.getX(), blockPos.getY(), blockPos.getZ(), RegExEr.upperCaseFirst(dimension.getNamespace()), RegExEr.upperCaseFirst(dimension.getPath()), owner.getName().getString()));
+                        owner.networkHandler.sendChatCommand(String.format("msg %s " + createPosMessage, member.getProfile().getName(), blockPos.getX(), blockPos.getY(), blockPos.getZ(), RegExEr.upperCaseFirst(dimension.getNamespace()), RegExEr.upperCaseFirst(dimension.getPath()), owner.getName().getString()));
                 }));
             }
         } else {
             if (owner.getScoreboardTeam() != null) {
                 if (PathfinderClient.is_loaded) {
-                    ClientPlayNetworking.send(new ServerNetworking.CreateTeamWaypointPayload(blockPos, dimension.toString()));
+                    ClientPlayNetworking.send(new TeamWaypointPayload.CreatePos(blockPos, dimension.toString()));
                 } else {
-                    PathfinderClient.getPlayer().networkHandler.sendChatCommand(String.format("teammsg " + createMessage, blockPos.getX(), blockPos.getY(), blockPos.getZ(), RegExEr.upperCaseFirst(dimension.getNamespace()), RegExEr.upperCaseFirst(dimension.getPath()), owner.getName().getString()));
+                    PathfinderClient.getPlayer().networkHandler.sendChatCommand(String.format("teammsg " + createPosMessage, blockPos.getX(), blockPos.getY(), blockPos.getZ(), RegExEr.upperCaseFirst(dimension.getNamespace()), RegExEr.upperCaseFirst(dimension.getPath()), owner.getName().getString()));
+                }
+            } else {
+                owner.sendMessage(Text.literal(String.format("Not in any Team. Join Team or change in <%s> to share Waypoint.", MinecraftClient.getInstance().options.socialInteractionsKey.getBoundKeyLocalizedText().getString())).formatted(Formatting.RED), true);
+            }
+        }
+    }
+
+    private static void sendEntityWaypoint(Entity entity) {
+        if (!canSend())
+            return;
+        ClientPlayerEntity owner = PathfinderClient.getPlayer();
+        if (owner == null)
+            return;
+        int entityId = entity.getId();
+        if (PathfinderConfig.USE_GANG) {
+            if (PathfinderClient.is_loaded) {
+                GangHandler.forEach(toPlayer -> ClientPlayNetworking.send(new GangWaypointPayload.CreateEntity(toPlayer, entityId)));
+            } else {
+                GangHandler.forEach((uuid -> {
+                    PlayerListEntry member = owner.networkHandler.getPlayerListEntry(uuid);
+                    if (member != null)
+                        owner.networkHandler.sendChatCommand(String.format("msg %s " + createEntityMessage, member.getProfile().getName(), entity.getName().getString(), entityId, owner.getName().getString()));
+                }));
+            }
+        } else {
+            if (owner.getScoreboardTeam() != null) {
+                if (PathfinderClient.is_loaded) {
+                    ClientPlayNetworking.send(new TeamWaypointPayload.CreateEntity(entityId));
+                } else {
+                    PathfinderClient.getPlayer().networkHandler.sendChatCommand(String.format("teammsg " + createEntityMessage, entity.getName().getString(), entityId, owner.getName().getString()));
                 }
             } else {
                 owner.sendMessage(Text.literal(String.format("Not in any Team. Join Team or change in <%s> to share Waypoint.", MinecraftClient.getInstance().options.socialInteractionsKey.getBoundKeyLocalizedText().getString())).formatted(Formatting.RED), true);
@@ -161,25 +251,25 @@ public class WaypointHandler {
     /**
      * Deletes the waypoint for the client player.
      */
-    public static void deleteWaypoint() {
+    public static void removeWaypoint() {
         ClientPlayerEntity player = PathfinderClient.getPlayer();
         if (player != null) {
             UUID uuid = player.getUuid();
             removeWaypoint(uuid);
-            sendDelete();
+            sendRemove();
         }
     }
 
     /**
      * Sends a delete message for the client player's waypoint.
      */
-    private static void sendDelete() {
+    private static void sendRemove() {
         ClientPlayerEntity owner = PathfinderClient.getPlayer();
         if (owner == null)
             return;
         if (PathfinderConfig.USE_GANG) {
             if (PathfinderClient.is_loaded) {
-                GangHandler.forEach(uuid -> ClientPlayNetworking.send(new ServerNetworking.RemoveGangWaypointPayload(uuid)));
+                GangHandler.forEach(uuid -> ClientPlayNetworking.send(new GangWaypointPayload.Remove(uuid)));
             } else {
                 GangHandler.forEach((uuid -> {
                     PlayerListEntry member = owner.networkHandler.getPlayerListEntry(uuid);
@@ -190,7 +280,7 @@ public class WaypointHandler {
         } else {
             if (owner.getScoreboardTeam() != null) {
                 if (PathfinderClient.is_loaded) {
-                    ClientPlayNetworking.send(new ServerNetworking.RemoveTeamWaypointPayload());
+                    ClientPlayNetworking.send(new TeamWaypointPayload.Remove());
                 } else {
                     owner.networkHandler.sendChatCommand(String.format("teammsg " + deleteMessage, owner.getName().getString()));
                 }
@@ -246,7 +336,7 @@ public class WaypointHandler {
         Vec3d cameraView = camera.getRotationVec(tickDelta);
         Vec3d end = start.add(cameraView.getX() * maxDistance, cameraView.getY() * maxDistance, cameraView.getZ() * maxDistance);
         Box box = camera.getBoundingBox().stretch(end).expand(1.0, 1.0, 1.0);
-        HitResult entityHitResult = ProjectileUtil.raycast(camera, start, end, box, (entity) -> !entity.isSpectator(), maxDistance); // get Entity raycast
+        HitResult entityHitResult = ProjectileUtil.raycast(camera, start, end, box, (entity) -> !entity.isSpectator(), maxDistance); // get CreateEntity raycast
         return entityHitResult != null && entityHitResult.getPos().squaredDistanceTo(start) < blockHitDistance ? entityHitResult : blockHitResult; // return closest
     }
 
@@ -278,7 +368,8 @@ public class WaypointHandler {
     }
 
     static {
-        createMessage = "Lets meet at: X:%d Y:%d Z:%d in the %s %s. ~%s"; // Lets meet at: X:420 Y:69 Z:-13 in the Minecraft Overworld. ~BaumeisterJO
+        createPosMessage = "Lets meet at: X:%d Y:%d Z:%d in the %s %s. ~%s"; // Lets meet at: X:420 Y:69 Z:-13 in the Minecraft Overworld. ~BaumeisterJO
+        createEntityMessage = "Lets meet by the %s (%s). ~%s"; // Lets meet at: X:420 Y:69 Z:-13 in the Minecraft Overworld. ~BaumeisterJO
         deleteMessage = "Forget about my meeting point. ~%s";
     }
 }

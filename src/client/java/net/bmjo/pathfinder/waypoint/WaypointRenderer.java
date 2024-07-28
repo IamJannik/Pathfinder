@@ -4,11 +4,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.BufferBuilderStorage;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.SkinTextures;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
@@ -99,11 +97,10 @@ public final class WaypointRenderer {
         if (distance >= 0.0D) {
             // ORIGIN
             matrixStack.multiply(camera.getRotation().invert());
-            Vec3d waypointOffset = Waypoint.getOffset();
-            matrixStack.translate(waypointOffset.getX(), waypointOffset.getY(), waypointOffset.getZ()); // over block offset
 
             //POSITION
             matrixStack.translate(transformVec.x, transformVec.y, transformVec.z); // waypoint position offset
+            matrixStack.translate(0.0D, waypoint.getYOffset(), 0);
 
             // ANGLE
             Quaternionf quaternion = new Quaternionf().rotateXYZ((float) Math.toRadians(camera.getPitch()), (float) -Math.toRadians(camera.getYaw()), (float) Math.toRadians(180.0F));
@@ -114,7 +111,6 @@ public final class WaypointRenderer {
             float scale = SIZE / 16.0F;
             float distanceScale = Math.max(scale * (distance / 4.0F), scale);
             matrixStack.scale(distanceScale, distanceScale, distanceScale);
-
 
             String name = waypoint.owner();
             String distanceText = "";
@@ -142,9 +138,8 @@ public final class WaypointRenderer {
         MatrixStack matrixStack = this.drawContext.getMatrices();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         matrixStack.push();
-        //MC.getEntityRenderDispatcher().getRenderer(null).getTexture(null);
 
-        this.drawPlayerHead(waypoint);
+        waypoint.drawIcon(drawContext);
 
         matrixStack.scale(0.5F, 0.5F, 0.5F);
         if (!name.isEmpty()) {
@@ -154,15 +149,8 @@ public final class WaypointRenderer {
         if (!distance.isEmpty()) {
             this.renderWaypointLabel(distance);
         }
-        matrixStack.pop();
-    }
 
-    private void drawPlayerHead(Waypoint waypoint) {
-        SkinTextures skin = waypoint.skin();
-        if (skin != null) {
-            int headSize = 8;
-            PlayerSkinDrawer.draw(this.drawContext, skin, -(headSize / 2), -(headSize + 1), headSize);
-        }
+        matrixStack.pop();
     }
 
     private void renderWaypointLabel(String label) {

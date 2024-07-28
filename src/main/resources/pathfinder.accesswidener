@@ -1,0 +1,4 @@
+accessWidener v2 named
+accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraft/client/render/Camera;FZ)D
+accessible method net/minecraft/client/render/GameRenderer tiltViewWhenHurt (Lnet/minecraft/client/util/math/MatrixStack;F)V
+accessible method net/minecraft/client/render/GameRenderer bobView (Lnet/minecraft/client/util/math/MatrixStack;F)V

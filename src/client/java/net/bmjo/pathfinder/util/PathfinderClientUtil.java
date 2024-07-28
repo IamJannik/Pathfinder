@@ -16,6 +16,18 @@ import java.util.UUID;
  * @version 1.0
  */
 public class PathfinderClientUtil {
+    public static String uuidToName(UUID owner) {
+        ClientPlayerEntity player = PathfinderClient.getPlayer();
+        String ownerName = "";
+        if (player != null) {
+            PlayerListEntry playerListEntry = player.networkHandler.getPlayerListEntry(owner);
+            if (playerListEntry != null) {
+                ownerName = playerListEntry.getProfile().getName();
+            }
+        }
+        return ownerName;
+    }
+
     /**
      * Gets the names of players in the same minecraft team as the client player.
      *

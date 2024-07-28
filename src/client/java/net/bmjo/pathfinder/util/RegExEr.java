@@ -48,7 +48,7 @@ public class RegExEr {
         if (message.contains("Lets meet at:")) {
             try {
                 GlobalPos globalPos = posFromMessage(message);
-                WaypointHandler.tryAddWaypoint(sender, globalPos);
+                WaypointHandler.tryAddPosWaypoint(sender, globalPos);
             } catch (InvalidIdentifierException | NumberFormatException e) {
                 PathfinderClient.LOGGER.info("Pathfinder Chat Message detected but was wrong Pattern.");
             }

@@ -21,16 +21,14 @@ public class ClientEvents {
     public static void registerEvents() {
         //ServerPlayConnectionEvents.JOIN.register((client, sender, server) -> ClientPlayNetworking.send(new ServerNetworking.IsLoadedPayload()));
         ServerPlayConnectionEvents.DISCONNECT.register((client, sender) -> PathfinderClient.is_loaded = false);
-        //HudRenderCallback.EVENT.register((drawContext, tickDelta) -> WaypointRenderer.getInstance().render(drawContext, tickDelta));
+        //HudRenderCallback.EVENT.register((drawContext, tickDelta) -> WaypointHUDRenderer.getInstance().render(drawContext, tickDelta));
         WorldRenderEvents.END.register((context) -> WaypointRenderer.getInstance().render());
 
         ClientTickEvents.START_CLIENT_TICK.register((client) -> {
             while (waypointKey.wasPressed())
                 WaypointHandler.createWaypoint();
         });
-        ClientTickEvents.END_CLIENT_TICK.register((client) -> {
-            WaypointHandler.update();
-        });
+        ClientTickEvents.END_CLIENT_TICK.register((client) -> WaypointHandler.update());
     }
 
     static {
